@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Hello world action step
         id: hello
-        uses: actions/findb_dolthub #@v1 later we cann add a version
+        uses: adagrad/findb_dolthub #@v1 later we cann add a version
         with:
           who-to-greet: 'Mona the Octocat'
       # Use the output from the `hello` step
