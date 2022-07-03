@@ -1,0 +1,10 @@
+argparse
+beautifulsoup4
+cachier
+investpy
+lxml
+pandas
+requests
+sqlalchemy
+yfinance
+
