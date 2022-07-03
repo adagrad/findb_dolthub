@@ -1,3 +1,11 @@
+name: "Test"
+
+on:
+  workflow_dispatch:
+  schedule:
+    # run once a month
+    - cron: "0 1 1 * *"
+
 jobs:
   hello_world_job:
     runs-on: ubuntu-latest
