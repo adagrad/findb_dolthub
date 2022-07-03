@@ -7,4 +7,5 @@ pandas
 requests
 sqlalchemy
 yfinance
+click
 
