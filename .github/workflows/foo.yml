@@ -14,6 +14,10 @@ jobs:
       - name: Hello world action step
         id: hello
         uses: adagrad/findb_dolthub@v1
+        env:
+          REPO: adagrad
+          DATABASE: findb
+          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
         with:
           who-to-greet: 'Mona the Octocat'
       # Use the output from the `hello` step

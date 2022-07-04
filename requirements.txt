@@ -1,11 +1,11 @@
 argparse
 beautifulsoup4
 cachier
+click
 investpy
 lxml
 pandas
 requests
+requests-random-user-agent
 sqlalchemy
 yfinance
-click
-
