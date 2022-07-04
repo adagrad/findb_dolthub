@@ -38,7 +38,7 @@ headers = {
 }
 query_string = {'device': 'console', 'returnMeta': 'true'}
 illegal_tokens = ['null']
-max_brute_force_len = 4
+max_brute_force_len = 3
 rsession = requests.Session()
 
 
@@ -63,6 +63,9 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
     existing_symbols = known_symbols if known_symbols is not None else _get_existing_symbols(repo_database, retries) if has_repo > 0 else {}
     possible_symbols -= existing_symbols
 
+    # make random starting order
+    possible_symbols = _shuffle_set(possible_symbols)
+
     print(f"fetched last state {len(existing_symbols)} symbols in {(datetime.now() - started).seconds / 60} minutes")
     with open(output + ".existing.symbols", 'w') as f:
         for es in existing_symbols:
@@ -73,7 +76,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
 
     while len(possible_symbols) > 0:
         # now we randomize the query, this way we can run this program parallel
-        query = random.choice(tuple(possible_symbols))
+        query = possible_symbols.pop()
         i, count = -1, -1
 
         for i in range(retries):
@@ -81,8 +84,9 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
                 df, count = _next_request(query)
                 break
             except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-                print(f"Retry attempt: {i+1} of {retries}. Sleep period: {(i + 1) * 5} seconds.", e)
-                sleep((i + 1) * 5)
+                sleep_amt = int(math.pow(5, i + 1))
+                print(f"Retry attempt: {i+1} of {retries}. Sleep period: {sleep_amt} seconds.", e)
+                sleep(sleep_amt)
 
                 # reset session for a new random user agent
                 global rsession
@@ -113,11 +117,16 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
                 for es in existing_symbols:
                     f.write(es + ' \n')
 
-        # remove query and check if we still have some time left to run another search
-        possible_symbols.remove(query)
+        # check if we still have some time left to run another search
         if time is not None and (datetime.now() - started).seconds / 60 > time:
             print(f"maximum allowed {time} minutes reached")
             return
+
+
+def _shuffle_set(s):
+    l = list(s)
+    random.shuffle(l)
+    return set(l)
 
 
 def _brute_force_symbols(max_len=4):
