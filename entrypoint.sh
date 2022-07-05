@@ -12,20 +12,14 @@ BRANCH=`echo $RANDOM | md5sum | head -c 20`
 BRANCH="$1/$2/$BRANCH"
 dolt checkout -b "$BRANCH"
 
-tor -f /etc/tor/torrc.default
+# enable tor proxies
+tor -f /etc/tor/torrc.default &
 
 # run command
-#  TODO ...
-echo "Hello $1"
-time=$(date)
-
-# load data and
-#  TODO load csv: dolt table import -u "$1_$2" ../pull/yfsymbols.csv
-#   mabye we can force a structure that the command need to return a list of table and file path combination to load the data
+python main.py yfinance symbol --time 150 --dolt-load
 
 # commit changes and push data branch
 dolt add .
 dolt commit -m"gh action"
 dolt push --set-upstream origin "$BRANCH"
 
-echo "::set-output name=time::$time"

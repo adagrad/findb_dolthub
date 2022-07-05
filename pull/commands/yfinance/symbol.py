@@ -32,7 +32,8 @@ illegal_tokens = ['null']
 class YFSession(RequestsSession):
 
     def __init__(self, tor_socks_port=None, tor_control_port=None, tor_control_password="password") -> None:
-        super().__init__("http://finance.yahoo.com/", tor_socks_port, tor_control_port, tor_control_password)
+        #super().__init__("http://finance.yahoo.com/", tor_socks_port, tor_control_port, tor_control_password)
+        super().__init__(None, tor_socks_port, tor_control_port, tor_control_password)
 
 
 @click.command()

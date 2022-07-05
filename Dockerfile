@@ -11,9 +11,11 @@ RUN dolt config --global --add user.email adagrad@protonmail.com
 RUN dolt config --global --add user.name "adagrad"
 
 COPY entrypoint.sh /entrypoint.sh
+COPY pull /opt/
 COPY torrc.default /etc/tor/torrc.default
 
 EXPOSE 9050
 EXPOSE 9051
 
+WORKDIR /opt/pull/
 ENTRYPOINT ["/entrypoint.sh"]
