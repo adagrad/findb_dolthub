@@ -71,8 +71,9 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         exit(0)
 
     yf_session = YFSession(tor_socks_port, tor_control_port, tor_control_password)
+    possible_symbols = set(possible_symbols)
     while len(possible_symbols) > 0:
-        query = possible_symbols.pop(0)
+        query = possible_symbols.pop()
         i, count = -1, -1
 
         for i in range(retries):
@@ -96,7 +97,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
             letters = options_search_characters if query[-1].isnumeric() else general_search_characters
             for c in letters:
-                possible_symbols.insert(0, query + c)
+                possible_symbols.add(query + c)
 
         if count > 0:
             # remove symbols we already have in the database and update the known symbols accordingly
