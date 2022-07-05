@@ -44,10 +44,11 @@ class YFSession(RequestsSession):
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
+@click.option('--no-ease', default=False, is_flag=True, help='Don\'t sleep between http search calls' )
 @click.option('--tor-socks-port', default=None, type=int, help='Tor scks port to access yfinance via TOR')
 @click.option('--tor-control-port', default=None, type=int, help='Tor control port to reset exit IP')
 @click.option('--tor-control-password', default="password", type=str, help='Tor control passeord to reset exit IP')
-def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, tor_socks_port, tor_control_port, tor_control_password):
+def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password):
     started = datetime.now()
     print(f"started at: {started}, write results to {os.path.abspath(output)}", requests_random_user_agent.__version__)
 
@@ -78,6 +79,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
             if query in existing_symbols: break
 
             try:
+                if not no_ease: sleep(random.random() + 0.2)  # just ease a bit on the server
                 df, count = _next_request(yf_session.rsession, query)
                 break
             except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
