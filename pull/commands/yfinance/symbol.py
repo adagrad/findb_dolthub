@@ -6,7 +6,7 @@ import sys
 import urllib.parse
 from datetime import datetime
 from time import sleep
-from urllib.parse import quote, urlencode
+from urllib.parse import quote
 
 import click
 import pandas as pd
@@ -41,7 +41,6 @@ headers = {
 }
 query_string = {'device': 'console', 'returnMeta': 'true'}
 illegal_tokens = ['null']
-max_brute_force_len = 3
 rsession = requests.Session()
 
 
@@ -63,9 +62,8 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
     has_repo = len(repo_database) > 0 and "None" != repo_database
     max_symbol_length = _get_max_symbol_length(repo_database) if has_repo > 0 else 21
 
-    possible_symbols = _brute_force_symbols(max_brute_force_len)
+    possible_symbols = [c for c in first_search_characters]
     existing_symbols = known_symbols if known_symbols is not None else _get_existing_symbols(repo_database, retries) if has_repo > 0 else []
-    # possible_symbols -= existing_symbols
 
     # make random starting order
     random.shuffle(possible_symbols)
@@ -81,6 +79,8 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         i, count = -1, -1
 
         for i in range(retries):
+            if query in existing_symbols: break
+
             try:
                 df, count = _next_request(query)
                 break
@@ -96,7 +96,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         if i >= retries:
             raise ValueError(f"Stop loop after {retries} failed retries")
 
-        if count > 10 and len(query) >= max_brute_force_len and len(query) < max_symbol_length + 1:
+        if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
             letters = options_search_characters if query[-1].isnumeric() else general_search_characters
             for c in letters:
                 possible_symbols.insert(0, query + c)
@@ -127,25 +127,6 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
     else:
         print(f"dolt table import -u {table_name} {os.path.abspath(output)}")
         exit(0)
-
-
-def _brute_force_symbols(max_len=4):
-    symbols = []
-
-    def add_character(s):
-        for c in general_search_characters:
-            _next = s + c
-            yield _next
-            if (len(_next)) < max_len:
-                for _s in add_character(_next):
-                    yield _s
-
-    for fc in first_search_characters:
-        symbols.append(fc)
-        for s in add_character(fc):
-            symbols.append(s)
-
-    return symbols
 
 
 def _get_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
