@@ -148,37 +148,6 @@ def _get_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max
     return existing_symbols
 
 
-def _get_existing_symbols_old(database, max_retries=4, max_pages=999999):
-    def get_page(offset):
-        print("fetch existing symbols page offset", offset)
-        return requests.get(
-            f'https://dolthub.com/api/v1alpha1/{database}/main?q=select symbol from {table_name} order by symbol limit {offset}, {offset + 200}'
-        ).json()['rows']
-
-    existing_symbols = []
-    page_count = 0
-    offset = 0
-    retry = 0
-
-    while retry < max_retries:
-        try:
-            page = get_page(offset)
-            existing_symbols += [p['symbol'] for p in page]
-            page_count += 1
-            offset += 200
-            retry = 0
-
-            if len(page) < 200 or page_count >= max_pages:
-                break
-
-        except Exception:
-            retry += 1
-            print("retry after error", retry + 1)
-            sleep(1 * retry)
-
-    return existing_symbols
-
-
 def _get_max_symbol_length(database):
     resp = requests.get(
         f'https://dolthub.com/api/v1alpha1/{database}/main?q=select max(length(symbol)) as length from {table_name}'
@@ -196,7 +165,24 @@ def _next_request(rsession, query_str, max_retries=4):
         count = len(df)
         return df, count
 
-    return decode_symbols_container(_fetch(rsession, query_str))
+    return decode_symbols_container(
+        _fetch(
+            rsession,
+            query_str,
+            headers={
+                # "Cookie": "",
+                # 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                # 'Accept-Language': 'en-US,en;q=0.5',
+                # 'Accept-Encoding': 'gzip, deflate, br',
+                # 'DNT': '1',
+                # 'Connection': 'keep-alive',
+                # 'Upgrade-Insecure-Requests': '1',
+                # 'Sec-Fetch-Dest': 'document',
+                # 'Sec-Fetch-Mode': 'navigate',
+                # 'Sec-Fetch-Site': 'cross-site',
+            }
+        )
+    )
 
 
 def _fetch(rsession, query_str, headers={}):
