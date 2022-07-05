@@ -12,5 +12,7 @@ pandas
 request-boost
 requests
 requests-random-user-agent
+requests[socks]
 sqlalchemy
+stem
 yfinance

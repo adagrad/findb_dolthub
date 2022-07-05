@@ -14,6 +14,8 @@ import requests
 import requests_random_user_agent
 from request_boost import boosted_requests
 
+from modules.requests_session import RequestsSession
+
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
@@ -23,25 +25,14 @@ general_search_characters = '012.ap5csnb63v47t8xem9flidgurqhokzwyj=+'
 options_search_characters = '0123456789PCa5snbvxemflidgurqhokzwyj=+.'
 table_name = 'yfinance_symbol'
 
-
-headers = {
-    #'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0',  # 'yahoo-ticker-symbol-downloader'
-    #'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    #'Accept-Language': 'en-US,en;q=0.5',
-    #'Accept-Encoding': 'gzip, deflate, br',
-    #'DNT': '1',
-    #'Connection': 'keep-alive',
-    #'Cookie: XXXX'
-    #'Upgrade-Insecure-Requests': '1',
-    #'Sec-Fetch-Dest': 'document',
-    #'Sec-Fetch-Mode': 'navigate',
-    #'Sec-Fetch-Site': 'cross-site',
-    #'If-None-Match': 'W/"98-a6M7dMFne4FxCrSkEA+UT5YgLSU"',
-    #'TE': 'trailers'
-}
 query_string = {'device': 'console', 'returnMeta': 'true'}
 illegal_tokens = ['null']
-rsession = requests.Session()
+
+
+class YFSession(RequestsSession):
+
+    def __init__(self, tor_socks_port=None, tor_control_port=None, tor_control_password="password") -> None:
+        super().__init__("http://finance.yahoo.com/", tor_socks_port, tor_control_port, tor_control_password)
 
 
 @click.command()
@@ -52,7 +43,10 @@ rsession = requests.Session()
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
-def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load):
+@click.option('--tor-socks-port', default=None, type=int, help='Tor scks port to access yfinance via TOR')
+@click.option('--tor-control-port', default=None, type=int, help='Tor control port to reset exit IP')
+@click.option('--tor-control-password', default="password", type=str, help='Tor control passeord to reset exit IP')
+def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, tor_socks_port, tor_control_port, tor_control_password):
     started = datetime.now()
     print(f"started at: {started}, write results to {os.path.abspath(output)}", requests_random_user_agent.__version__)
 
@@ -74,6 +68,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
     if fetch_known_symbols_only:
         exit(0)
 
+    yf_session = YFSession(tor_socks_port, tor_control_port, tor_control_password)
     while len(possible_symbols) > 0:
         query = possible_symbols.pop(0)
         i, count = -1, -1
@@ -82,7 +77,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
             if query in existing_symbols: break
 
             try:
-                df, count = _next_request(query)
+                df, count = _next_request(yf_session.rsession, query)
                 break
             except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
                 sleep_amt = int(math.pow(5, i + 1))
@@ -90,8 +85,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
                 sleep(sleep_amt)
 
                 # reset session for a new random user agent
-                global rsession
-                rsession = requests.Session()
+                yf_session.reset_session()
 
         if i >= retries:
             raise ValueError(f"Stop loop after {retries} failed retries")
@@ -194,7 +188,7 @@ def _get_max_symbol_length(database):
     return max_symbol_length
 
 
-def _next_request(query_str, max_retries=4):
+def _next_request(rsession, query_str, max_retries=4):
     def decode_symbols_container(json):
         df = pd.DataFrame(json['data']['items'])\
             .rename(columns={"exch": "exchange", "exchDisp": "exchange_description", "typeDisp": "type_description"})
@@ -202,10 +196,10 @@ def _next_request(query_str, max_retries=4):
         count = len(df)
         return df, count
 
-    return decode_symbols_container(_fetch(query_str))
+    return decode_symbols_container(_fetch(rsession, query_str))
 
 
-def _fetch(query_str):
+def _fetch(rsession, query_str, headers={}):
     # curl 'https://finance.yahoo.com/_finance_doubledown/api/resource/searchassist;searchTerm=zt9c?device=console&returnMeta=true' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate, br' -H 'DNT: 1' -H 'Connection: keep-alive' -H 'Cookie: A1=d=AQABBCbOwmICEJWysq1Qp7ywjF4irDRfshwFEgEBAQEfxGLMYgAAAAAA_eMAAA&S=AQAAAr9Nn1qU_11hiHcgRn6AAQg; A3=d=AQABBCbOwmICEJWysq1Qp7ywjF4irDRfshwFEgEBAQEfxGLMYgAAAAAA_eMAAA&S=AQAAAr9Nn1qU_11hiHcgRn6AAQg; A1S=d=AQABBCbOwmICEJWysq1Qp7ywjF4irDRfshwFEgEBAQEfxGLMYgAAAAAA_eMAAA&S=AQAAAr9Nn1qU_11hiHcgRn6AAQg&j=WORLD' -H 'Upgrade-Insecure-Requests: 1' -H 'Sec-Fetch-Dest: document' -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-Site: cross-site' -H 'If-None-Match: W/"98-a6M7dMFne4FxCrSkEA+UT5YgLSU"' -H 'TE: trailers'
     def _encodeParams(params):
         encoded = ''
