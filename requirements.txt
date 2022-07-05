@@ -1,10 +1,15 @@
+aiodns
+aiohttp
 argparse
+asyncio
 beautifulsoup4
 cachier
+cchardet
 click
 investpy
 lxml
 pandas
+request-boost
 requests
 requests-random-user-agent
 sqlalchemy

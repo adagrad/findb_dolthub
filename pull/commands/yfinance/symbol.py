@@ -3,14 +3,16 @@ import math
 import os.path
 import random
 import sys
+import urllib.parse
 from datetime import datetime
 from time import sleep
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 import click
 import pandas as pd
 import requests
 import requests_random_user_agent
+from request_boost import boosted_requests
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -19,6 +21,7 @@ first_search_characters = 'abcdefghijklmnopqrstuvwxyz^'
 # a representation of 'abcdefghijklmnopqrstuvwxyz0123456789.=' but in statistical order
 general_search_characters = '012.ap5csnb63v47t8xem9flidgurqhokzwyj=+'
 options_search_characters = '0123456789PCa5snbvxemflidgurqhokzwyj=+.'
+table_name = 'yfinance_symbol'
 
 
 headers = {
@@ -48,35 +51,33 @@ rsession = requests.Session()
 @click.option('-o', '--output', type=str, default="yfsymbols.csv", help='Filename holding the results, appends if exists')
 @click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
-@click.option('--fetch-known-symbols-only', default=False, help='Only saves the known symbols')
-def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only):
+@click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
+@click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
+def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load):
     started = datetime.now()
-    print(f"started at: {started}, write results to {os.path.abspath(output)}", requests_random_user_agent.default_user_agent)
+    print(f"started at: {started}, write results to {os.path.abspath(output)}", requests_random_user_agent.__version__)
 
     if known_symbols is not None:
-        known_symbols = set(open(known_symbols).readlines())
+        known_symbols = open(known_symbols).readlines()
 
     has_repo = len(repo_database) > 0 and "None" != repo_database
     max_symbol_length = _get_max_symbol_length(repo_database) if has_repo > 0 else 21
 
     possible_symbols = _brute_force_symbols(max_brute_force_len)
-    existing_symbols = known_symbols if known_symbols is not None else _get_existing_symbols(repo_database, retries) if has_repo > 0 else {}
-    possible_symbols -= existing_symbols
+    existing_symbols = known_symbols if known_symbols is not None else _get_existing_symbols(repo_database, retries) if has_repo > 0 else []
+    # possible_symbols -= existing_symbols
 
     # make random starting order
-    possible_symbols = _shuffle_set(possible_symbols)
+    random.shuffle(possible_symbols)
 
     print(f"fetched last state {len(existing_symbols)} symbols in {(datetime.now() - started).seconds / 60} minutes")
-    with open(output + ".existing.symbols", 'w') as f:
-        for es in existing_symbols:
-            f.write(es + ' \n')
+    _save_exisiting_symbls(existing_symbols, output)
 
     if fetch_known_symbols_only:
         exit(0)
 
     while len(possible_symbols) > 0:
-        # now we randomize the query, this way we can run this program parallel
-        query = possible_symbols.pop()
+        query = possible_symbols.pop(0)
         i, count = -1, -1
 
         for i in range(retries):
@@ -98,12 +99,12 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         if count > 10 and len(query) >= max_brute_force_len and len(query) < max_symbol_length + 1:
             letters = options_search_characters if query[-1].isnumeric() else general_search_characters
             for c in letters:
-                possible_symbols.add(query + c)
+                possible_symbols.insert(0, query + c)
 
         if count > 0:
             # remove symbols we already have in the database and update the known symbols accordingly
             df = df[~df["symbol"].isin(existing_symbols)]
-            existing_symbols.update(df["symbol"].to_list())
+            existing_symbols.extend(df["symbol"].to_list())
 
             # save remainder to output file
             if os.path.exists(output):
@@ -113,20 +114,19 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
                 df.to_csv(output, header=True, index=False)
 
             # save existing symbols for retry purposes
-            with open(output + ".existing.symbols", 'w') as f:
-                for es in existing_symbols:
-                    f.write(es + ' \n')
+            _save_exisiting_symbls(existing_symbols, output)
 
         # check if we still have some time left to run another search
         if time is not None and (datetime.now() - started).seconds / 60 > time:
             print(f"maximum allowed {time} minutes reached")
-            return
+            break
 
-
-def _shuffle_set(s):
-    l = list(s)
-    random.shuffle(l)
-    return set(l)
+    # finalize the program
+    if dolt_load:
+        exit(os.system(f"bash -c 'dolt table import -u {table_name} {os.path.abspath(output)}'"))
+    else:
+        print(f"dolt table import -u {table_name} {os.path.abspath(output)}")
+        exit(0)
 
 
 def _brute_force_symbols(max_len=4):
@@ -145,14 +145,39 @@ def _brute_force_symbols(max_len=4):
         for s in add_character(fc):
             symbols.append(s)
 
-    return set(symbols)
+    return symbols
 
 
-def _get_existing_symbols(database, max_retries=4, max_pages=999999):
+def _get_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
+    url = 'https://dolthub.com/api/v1alpha1/' + database +'/main?q='
+    query = 'select symbol from ' + table_name + ' order by symbol limit {offset}, {limit}'
+    offset = page_size * nr_jobs
+
+    pages = [(x * page_size, x * page_size + page_size) for x in range(nr_jobs)]
+    existing_symbols = []
+
+    for i in range(max_batches):
+        urls = [url + urllib.parse.quote(query.format(offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
+        print("submit batch", i, "of batch size", urls)
+        results = boosted_requests(urls=urls, no_workers=4, max_tries=max_retries, timeout=5, parse_json=True, verbose=False)
+        results = [r['rows'] for r in results]
+
+        for r in results:
+            for s in r:
+                existing_symbols.append(s['symbol'])
+
+        # check if we have a full last batch
+        if len(results[-1]) < page_size:
+            break
+
+    return existing_symbols
+
+
+def _get_existing_symbols_old(database, max_retries=4, max_pages=999999):
     def get_page(offset):
         print("fetch existing symbols page offset", offset)
         return requests.get(
-            f'https://dolthub.com/api/v1alpha1/{database}/main?q=select symbol from yahoo_symbol order by symbol limit {offset}, {offset + 200}'
+            f'https://dolthub.com/api/v1alpha1/{database}/main?q=select symbol from {table_name} order by symbol limit {offset}, {offset + 200}'
         ).json()['rows']
 
     existing_symbols = []
@@ -176,12 +201,12 @@ def _get_existing_symbols(database, max_retries=4, max_pages=999999):
             print("retry after error", retry + 1)
             sleep(1 * retry)
 
-    return set(existing_symbols)
+    return existing_symbols
 
 
 def _get_max_symbol_length(database):
     resp = requests.get(
-        f'https://dolthub.com/api/v1alpha1/{database}/main?q=select max(length(symbol)) as length from yahoo_symbol'
+        f'https://dolthub.com/api/v1alpha1/{database}/main?q=select max(length(symbol)) as length from {table_name}'
     )
 
     max_symbol_length = resp.json()["rows"][0]['length']
@@ -231,6 +256,12 @@ def _fetch(query_str):
     except Exception as e:
         print("ERROR", req, headers, resp.text if resp is not None else "")
         raise e
+
+
+def _save_exisiting_symbls(existing_symbols, output):
+    with open(output + ".existing.symbols", 'w') as f:
+        for es in existing_symbols:
+            f.write(es + ' \n')
 
 
 if __name__ == '__main__':
