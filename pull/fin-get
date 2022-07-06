@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+DIR=$(dirname $([ -L $0 ] && readlink -f $0 || echo $0))
+
+/usr/bin/env python3 "$DIR/main.py" "$@"
