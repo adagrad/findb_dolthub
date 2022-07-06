@@ -16,7 +16,7 @@ jobs:
         with:
           repo: adagrad
           database: findb
-          dolthub_secret: ${{ secrets.DOLTHUB_SECRET }}
+          dolthub-secret: ${{ secrets.DOLTHUB_SECRET }}
           command1: yfinance
           command2: symbol
           command-args: --time 15 --dolt-load
