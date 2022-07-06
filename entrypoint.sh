@@ -8,10 +8,6 @@ dolt config --global --add user.email 'bot@bot.bot'
 dolt config --global --add user.name 'adagrad'
 dolt config --list
 
-REPO=$INPUT_REPO
-DATABASE=$INPUT_DATABASE
-DOLTHUB_SECRET=$INPUT_DOLTHUB_SECRET
-
 # clone schema branch
 echo dolt init and fetch "$REPO/$DATABASE"
 mkdir $DATABASE && cd $DATABASE
@@ -27,7 +23,7 @@ dolt config --local --add user.creds "$DOLTHUB_SECRET"
 
 # branch off into a data branch
 BRANCH=`echo $RANDOM | md5sum | head -c 20`
-BRANCH="$1/$2/$BRANCH"
+BRANCH="$INPUT_COMMAND1/$INPUT_COMMAND2/$BRANCH"
 
 echo dolt checkout -b "$BRANCH"
 dolt checkout -b "$BRANCH"
