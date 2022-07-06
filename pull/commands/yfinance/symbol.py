@@ -67,34 +67,35 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
     yf_session = YFSession(tor_socks_port, tor_control_port, tor_control_password)
 
     while len(possible_symbols) > 0:
-        query = possible_symbols.pop()
-        df, count = _download_new_symbols(query, existing_symbols, retries, not no_ease, yf_session)
+        try:
+            query = possible_symbols.pop()
+            df, count = _download_new_symbols(query, existing_symbols, retries, not no_ease, yf_session)
 
-        if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
-            letters = options_search_characters if query[-1].isnumeric() else general_search_characters
-            for c in letters:
-                possible_symbols.add(query + c)
+            if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
+                letters = options_search_characters if query[-1].isnumeric() else general_search_characters
+                for c in letters:
+                    possible_symbols.add(query + c)
 
-        if count > 0:
-            # remove symbols we already have in the database and update the known symbols accordingly
-            df = df[~df["symbol"].isin(existing_symbols)]
-            existing_symbols.update(df["symbol"].to_list())
+            if count > 0:
+                # remove symbols we already have in the database and update the known symbols accordingly
+                df = df[~df["symbol"].isin(existing_symbols)]
+                existing_symbols.update(df["symbol"].to_list())
 
-            # save remainder to output file
-            if os.path.exists(output):
-                with open(output, 'a') as f:
-                    df.to_csv(f, header=False, index=False)
-            else:
-                df.to_csv(output, header=True, index=False)
+                # save remainder to output file
+                if os.path.exists(output):
+                    with open(output, 'a') as f:
+                        df.to_csv(f, header=False, index=False)
+                else:
+                    df.to_csv(output, header=True, index=False)
 
-            # save existing symbols for retry purposes
-            _save_symbols(existing_symbols, output + ".existing.symbols")
-
-        # check if we still have some time left to run another search
-        if time is not None and (datetime.now() - started).seconds / 60 > time:
-            print(f"maximum allowed {time} minutes reached")
-            _save_symbols(possible_symbols, output + ".possible.symbols")
-            break
+                # save existing symbols for retry purposes
+                _save_symbols(existing_symbols, output + ".existing.symbols")
+        finally:
+            # check if we still have some time left to run another search
+            if time is not None and (datetime.now() - started).seconds / 60 > time:
+                print(f"maximum allowed {time} minutes reached")
+                _save_symbols(possible_symbols, output + ".possible.symbols")
+                break
 
     # finalize the program
     if dolt_load:
