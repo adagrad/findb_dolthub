@@ -32,7 +32,6 @@ dolt checkout -b "$BRANCH"
 # tor -f /etc/tor/torrc.default &
 
 # run command
-#python main.py yfinance symbol --time 150 --dolt-load
 echo fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
 fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
 
