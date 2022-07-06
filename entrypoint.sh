@@ -7,8 +7,8 @@ echo fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
 
 # prepare dolt environment
 echo dolt config
-dolt config --global --add user.email 'bot@bot.bot'
-dolt config --global --add user.name 'adagrad'
+dolt config --global --add user.email "$DOLTHUB_EMAIL"
+dolt config --global --add user.name "$DOLTHUB_USER"
 dolt config --list
 
 # clone schema branch

@@ -16,6 +16,8 @@ jobs:
         env:
           REPO: adagrad
           DATABASE: findb
+          DOLTHUB_USER: bot
+          DOLTHUB_EMAIL: bot@bot.bot
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
         with:
           command1: yfinance
