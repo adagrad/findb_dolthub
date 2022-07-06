@@ -1,4 +1,4 @@
-name: "Test"
+name: "Find new Symbols"
 
 on:
   workflow_dispatch:
@@ -9,17 +9,15 @@ on:
 jobs:
   hello_world_job:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: A job to look for new symbols
     steps:
-      - name: Hello world action step
-        id: hello
+      - name: lookup new symbols
         uses: adagrad/findb_dolthub@v1
         env:
           REPO: adagrad
           DATABASE: findb
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
         with:
-          who-to-greet: 'Mona the Octocat'
-      # Use the output from the `hello` step
-      - name: Get the output time
-        run: echo "The time was ${{ steps.hello.outputs.time }}"
+          command1: yfinance
+          command2: symbol
+          command-args: --time 15 --dolt-load

@@ -22,14 +22,13 @@ BRANCH="$1/$2/$BRANCH"
 dolt checkout -b "$BRANCH"
 
 # enable tor proxies
-#tor -f /etc/tor/torrc.default &
+# tor -f /etc/tor/torrc.default &
 
 # run command
 #python main.py yfinance symbol --time 150 --dolt-load
-fin-get yfinance symbol --help
+fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
 
 # commit changes and push data branch
-
 dolt add .
 dolt commit -m"gh action"
 dolt push --set-upstream origin "$BRANCH"

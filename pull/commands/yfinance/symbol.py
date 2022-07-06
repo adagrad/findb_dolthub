@@ -38,16 +38,16 @@ class YFSession(RequestsSession):
 @click.command()
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-r', '--resume', type=str, default=None, help='Symbols file to resume from a left session')
-@click.option('-o', '--output', type=str, default="yfsymbols.csv", help='Filename holding the results, appends if exists')
-@click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name')
+@click.option('-o', '--output', type=str, default="yfsymbols.csv", help='Filename holding the results, appends if exists (default=yfsymbols.csv)')
+@click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
 @click.option('--no-ease', default=False, is_flag=True, help='Don\'t sleep between http search calls' )
 @click.option('--tor-socks-port', default=None, type=int, help='Tor scks port to access yfinance via TOR')
 @click.option('--tor-control-port', default=None, type=int, help='Tor control port to reset exit IP')
-@click.option('--tor-control-password', default="password", type=str, help='Tor control passeord to reset exit IP')
-@click.option('--retries', type=int, default=4, help='Maximum number of retries')
+@click.option('--tor-control-password', default="password", type=str, help='Tor control password to reset exit IP')
+@click.option('--retries', type=int, default=4, help='Maximum number of retries (default=4)')
 def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
     started = datetime.now()
     print(f"started at: {started}, write results to {os.path.abspath(output)}")
@@ -218,7 +218,6 @@ def _next_request(rsession, query_str, max_retries=4):
 
 
 def _fetch(rsession, query_str, headers={}):
-    # curl 'https://finance.yahoo.com/_finance_doubledown/api/resource/searchassist;searchTerm=zt9c?device=console&returnMeta=true' -H 'User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:101.0) Gecko/20100101 Firefox/101.0' -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' -H 'Accept-Language: en-US,en;q=0.5' -H 'Accept-Encoding: gzip, deflate, br' -H 'DNT: 1' -H 'Connection: keep-alive' -H 'Cookie: A1=d=AQABBCbOwmICEJWysq1Qp7ywjF4irDRfshwFEgEBAQEfxGLMYgAAAAAA_eMAAA&S=AQAAAr9Nn1qU_11hiHcgRn6AAQg; A3=d=AQABBCbOwmICEJWysq1Qp7ywjF4irDRfshwFEgEBAQEfxGLMYgAAAAAA_eMAAA&S=AQAAAr9Nn1qU_11hiHcgRn6AAQg; A1S=d=AQABBCbOwmICEJWysq1Qp7ywjF4irDRfshwFEgEBAQEfxGLMYgAAAAAA_eMAAA&S=AQAAAr9Nn1qU_11hiHcgRn6AAQg&j=WORLD' -H 'Upgrade-Insecure-Requests: 1' -H 'Sec-Fetch-Dest: document' -H 'Sec-Fetch-Mode: navigate' -H 'Sec-Fetch-Site: cross-site' -H 'If-None-Match: W/"98-a6M7dMFne4FxCrSkEA+UT5YgLSU"' -H 'TE: trailers'
     def _encodeParams(params):
         encoded = ''
         for key, value in params.items():
