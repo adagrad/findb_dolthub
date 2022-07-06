@@ -11,7 +11,6 @@ from urllib.parse import quote
 import click
 import pandas as pd
 import requests
-import requests_random_user_agent
 from request_boost import boosted_requests
 
 from modules.requests_session import RequestsSession
@@ -38,7 +37,7 @@ class YFSession(RequestsSession):
 
 @click.command()
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
-@click.option('-r', '--retries', type=int, default=4, help='Maximum number of retries')
+@click.option('-r', '--resume', type=str, default=None, help='Symbols file to resume from a left session')
 @click.option('-o', '--output', type=str, default="yfsymbols.csv", help='Filename holding the results, appends if exists')
 @click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
@@ -48,28 +47,20 @@ class YFSession(RequestsSession):
 @click.option('--tor-socks-port', default=None, type=int, help='Tor scks port to access yfinance via TOR')
 @click.option('--tor-control-port', default=None, type=int, help='Tor control port to reset exit IP')
 @click.option('--tor-control-password', default="password", type=str, help='Tor control passeord to reset exit IP')
-def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password):
+@click.option('--retries', type=int, default=4, help='Maximum number of retries')
+def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
     started = datetime.now()
-    print(f"started at: {started}, write results to {os.path.abspath(output)}", requests_random_user_agent.__version__)
+    print(f"started at: {started}, write results to {os.path.abspath(output)}")
 
-    if known_symbols is not None:
-        known_symbols = open(known_symbols).readlines()
+    # get maximum lengh of symbols
+    max_symbol_length = _get_max_symbol_length(repo_database)
 
-    has_repo = len(repo_database) > 0 and "None" != repo_database
-    max_symbol_length = _get_max_symbol_length(repo_database) if has_repo > 0 else 21
-
-    possible_symbols = [c for c in first_search_characters]
-    existing_symbols = known_symbols if known_symbols is not None else _get_existing_symbols(repo_database, retries) if has_repo > 0 else []
-    existing_symbols = set([es.strip().upper() for es in existing_symbols])
-    known_symbols = None
-
-    # make random starting order
-    random.shuffle(possible_symbols)
-    possible_symbols = set(possible_symbols)
-
+    # get starting sets of symbols
+    existing_symbols, possible_symbols = _get_symbol_sets(known_symbols, repo_database, resume, retries)
     print(f"fetched last state {len(existing_symbols)} symbols in {(datetime.now() - started).seconds / 60} minutes")
-    _save_exisiting_symbls(existing_symbols, output)
+    _save_symbols(existing_symbols, output + ".existing.symbols")
 
+    # eventually we are already done
     if fetch_known_symbols_only:
         exit(0)
 
@@ -77,24 +68,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
 
     while len(possible_symbols) > 0:
         query = possible_symbols.pop()
-        i, count = -1, -1
-
-        if query not in existing_symbols:
-            for i in range(retries):
-                try:
-                    if not no_ease: sleep(random.random() + 0.2)  # just ease a bit on the server
-                    df, count = _next_request(yf_session.rsession, query)
-                    break
-                except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-                    sleep_amt = int(math.pow(5, i + 1))
-                    print(f"Retry attempt: {i+1} of {retries}. Sleep period: {sleep_amt} seconds.", e)
-                    sleep(sleep_amt)
-
-                    # reset session for a new random user agent
-                    yf_session.reset_session()
-
-            if i >= retries:
-                raise ValueError(f"Stop loop after {retries} failed retries")
+        df, count = _download_new_symbols(query, existing_symbols, retries, not no_ease, yf_session)
 
         if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
             letters = options_search_characters if query[-1].isnumeric() else general_search_characters
@@ -114,22 +88,41 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
                 df.to_csv(output, header=True, index=False)
 
             # save existing symbols for retry purposes
-            _save_exisiting_symbls(existing_symbols, output)
+            _save_symbols(existing_symbols, output + ".existing.symbols")
 
         # check if we still have some time left to run another search
         if time is not None and (datetime.now() - started).seconds / 60 > time:
             print(f"maximum allowed {time} minutes reached")
+            _save_symbols(possible_symbols, output + ".possible.symbols")
             break
 
     # finalize the program
     if dolt_load:
-        exit(os.system(f"bash -c 'dolt table import -u {table_name} {os.path.abspath(output)}'"))
+        if os.path.exists(output):
+            exit(os.system(f"bash -c 'dolt table import -u {table_name} {os.path.abspath(output)}'"))
     else:
         print(f"dolt table import -u {table_name} {os.path.abspath(output)}")
         exit(0)
 
 
-def _get_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
+def _get_symbol_sets(known_symbols_file, repo_database, resume_file, max_dolt_fetch_retries, **kwargs):
+    # get known symbols
+    known_symbols = None if known_symbols_file is None else _load_symbols(known_symbols_file)
+    has_repo = len(repo_database) > 0 and "None" != repo_database
+
+    possible_symbols = [c for c in first_search_characters] if resume_file is None else _load_symbols(resume_file)  # TODO eventually read from database table?
+    existing_symbols = known_symbols if known_symbols is not None else _fetch_existing_symbols(repo_database, max_dolt_fetch_retries, **kwargs) if has_repo > 0 else []
+    existing_symbols = set([es.strip().upper() for es in existing_symbols])
+    known_symbols = None
+
+    # make random starting order
+    random.shuffle(possible_symbols)
+    possible_symbols = set(possible_symbols)
+
+    return existing_symbols, possible_symbols
+
+
+def _fetch_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
     url = 'https://dolthub.com/api/v1alpha1/' + database +'/main?q='
     query = 'select symbol from ' + table_name + ' order by symbol limit {offset}, {limit}'
     offset = page_size * nr_jobs
@@ -154,13 +147,45 @@ def _get_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max
     return existing_symbols
 
 
-def _get_max_symbol_length(database):
-    resp = requests.get(
-        f'https://dolthub.com/api/v1alpha1/{database}/main?q=select max(length(symbol)) as length from {table_name}'
-    )
+def _get_max_symbol_length(repo_database, default_value=21):
+    if len(repo_database) > 0 and "None" != repo_database:
+        url = f'https://dolthub.com/api/v1alpha1/{repo_database}/main?q=select max(length(symbol)) as length from {table_name}'
+        resp = requests.get(url)
 
-    max_symbol_length = resp.json()["rows"][0]['length']
-    return max_symbol_length
+        try:
+            resp.raise_for_status()
+        except Exception as e:
+            raise ValueError(f"{url}, {resp.text}", e)
+
+        max_symbol_length = int(resp.json()["rows"][0]['length'])
+        return max_symbol_length
+
+    return default_value
+
+
+def _download_new_symbols(query, existing_symbols, retries, ease, yf_session, _fetch_json_as_dataframe=lambda r, q: _next_request(r, q)):
+    i, count, df = -1, -1, pd.DataFrame({})
+
+    if query not in existing_symbols:
+        for i in range(retries):
+            try:
+                if ease: sleep(random.random() + 0.2)  # just ease a bit on the server
+                df = _fetch_json_as_dataframe(yf_session.rsession, query)
+                count = len(df)
+                break
+            except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout,
+                    requests.exceptions.ConnectionError) as e:
+                sleep_amt = int(math.pow(5, i + 1))
+                print(f"Retry attempt: {i + 1} of {retries}. Sleep period: {sleep_amt} seconds.", e)
+                sleep(sleep_amt)
+
+                # reset session for a new random user agent
+                yf_session.reset_session()
+
+        if i >= retries:
+            raise ValueError(f"Stop loop after {retries} failed retries")
+
+    return df, count
 
 
 def _next_request(rsession, query_str, max_retries=4):
@@ -168,8 +193,7 @@ def _next_request(rsession, query_str, max_retries=4):
         df = pd.DataFrame(json['data']['items'])\
             .rename(columns={"exch": "exchange", "exchDisp": "exchange_description", "typeDisp": "type_description"})
 
-        count = len(df)
-        return df, count
+        return df
 
     return decode_symbols_container(
         _fetch(
@@ -226,10 +250,14 @@ def _fetch(rsession, query_str, headers={}):
         raise e
 
 
-def _save_exisiting_symbls(existing_symbols, output):
-    with open(output + ".existing.symbols", 'w') as f:
-        for es in existing_symbols:
-            f.write(es + ' \n')
+def _save_symbols(symbols, output_file):
+    with open(output_file, 'w') as f:
+        for es in symbols:
+            f.write(es.strip() + ' \n')
+
+
+def _load_symbols(file):
+    return [s.strip().upper() for s in open(file).readlines() if len(s.strip()) > 0]
 
 
 if __name__ == '__main__':
