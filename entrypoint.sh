@@ -3,11 +3,13 @@
 set -e
 
 # clone schema branch
-echo dolt clone "$REPO/$DATABASE"
+echo dolt init and fetch "$REPO/$DATABASE"
 mkdir $DATABASE && cd $DATABASE
 dolt init
-dolt config --global --add user.email 'bot@bot.bot'
-dolt config --global --add user.name 'adagrad'
+dolt config --local --add user.email 'bot@bot.bot'
+dolt config --local --add user.name 'adagrad'
+dolt config --list
+
 dolt remote add origin https://doltremoteapi.dolthub.com/$REPO/$DATABASE
 dolt fetch origin schema
 dolt checkout schema
