@@ -13,11 +13,10 @@ jobs:
     steps:
       - name: lookup new symbols
         uses: adagrad/findb_dolthub@v1
-        env:
-          REPO: adagrad
-          DATABASE: findb
-          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
         with:
+          repo: adagrad
+          database: findb
+          dolthub_secret: ${{ secrets.DOLTHUB_SECRET }}
           command1: yfinance
           command2: symbol
           command-args: --time 15 --dolt-load

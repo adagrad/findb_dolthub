@@ -8,6 +8,10 @@ dolt config --global --add user.email 'bot@bot.bot'
 dolt config --global --add user.name 'adagrad'
 dolt config --list
 
+REPO=$INPUT_REPO
+DATABASE=$INPUT_DATABASE
+DOLTHUB_SECRET=$INPUT_DOLTHUB_SECRET
+
 # clone schema branch
 echo dolt init and fetch "$REPO/$DATABASE"
 mkdir $DATABASE && cd $DATABASE
