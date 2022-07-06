@@ -2,8 +2,8 @@
 
 set -e
 
-echo "$1 $2 $3"
-echo fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
+# show the command we intend executing
+echo fin-get $1 $2 $3
 
 # prepare dolt environment
 echo dolt config
@@ -26,7 +26,7 @@ dolt config --local --add user.creds "$DOLTHUB_SECRET"
 
 # branch off into a data branch
 BRANCH=`echo $RANDOM | md5sum | head -c 20`
-BRANCH="$INPUT_COMMAND1/$INPUT_COMMAND2/$BRANCH"
+BRANCH="$1/$2/$BRANCH"
 
 echo dolt checkout -b "$BRANCH"
 dolt checkout -b "$BRANCH"
@@ -35,8 +35,7 @@ dolt checkout -b "$BRANCH"
 # tor -f /etc/tor/torrc.default &
 
 # run command
-echo fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
-fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
+fin-get $1 $2 $3
 
 # commit changes and push data branch
 dolt add .
