@@ -20,4 +20,4 @@ jobs:
         with:
           command1: yfinance
           command2: symbol
-          command_args: "--time 15 --dolt-load"
+          command-args: "--time 15 --dolt-load"

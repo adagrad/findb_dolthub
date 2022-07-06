@@ -1,15 +1,19 @@
 name: 'Findb Action'
 description: 'Fetch and load actions for findb'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
+  command1:
+    description: 'Main command to run'
     required: true
-    default: 'World'
-outputs:
-  time: # id of output
-    description: 'The time we greeted you'
+  command2:
+    description: 'Sub command to run'
+    required: true
+  command-args:
+    description: 'Sub command arguments'
+    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
   args:
-    - ${{ inputs.who-to-greet }}
+    - ${{ inputs.command1 }}
+    - ${{ inputs.command2 }}
+    - ${{ inputs.command-args }}
