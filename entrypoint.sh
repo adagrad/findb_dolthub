@@ -4,10 +4,13 @@ set -e
 
 # clone schema branch
 echo dolt clone "$REPO/$DATABASE"
-dolt clone "$REPO/$DATABASE" --branch=schema
-cd $DATABASE
+mkdir $DATABASE && cd $DATABASE
+dolt init
+dolt remote add origin https://doltremoteapi.dolthub.com/$REPO/$DATABASE
+dolt fetch origin schema
+dolt checkout schema
 
-# set token to allow push
+# add dolt config
 dolt config --local --add user.email 'bot@bot.bot'
 dolt config --local --add user.name 'adagrad'
 dolt config --local --add user.creds "$DOLTHUB_SECRET"
