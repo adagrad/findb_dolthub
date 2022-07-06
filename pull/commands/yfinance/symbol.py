@@ -19,10 +19,10 @@ from modules.requests_session import RequestsSession
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
-first_search_characters = 'abcdefghijklmnopqrstuvwxyz^'
+first_search_characters = 'abcdefghijklmnopqrstuvwxyz^'.upper()
 # a representation of 'abcdefghijklmnopqrstuvwxyz0123456789.=' but in statistical order
-general_search_characters = '012.ap5csnb63v47t8xem9flidgurqhokzwyj=+'
-options_search_characters = '0123456789PCa5snbvxemflidgurqhokzwyj=+.'
+general_search_characters = '012.ap5csnb63v47t8xem9flidgurqhokzwyj=+'.upper()
+options_search_characters = '0123456789PCa5snbvxemflidgurqhokzwyj=+.'.upper()
 table_name = 'yfinance_symbol'
 
 query_string = {'device': 'console', 'returnMeta': 'true'}
@@ -60,9 +60,12 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
 
     possible_symbols = [c for c in first_search_characters]
     existing_symbols = known_symbols if known_symbols is not None else _get_existing_symbols(repo_database, retries) if has_repo > 0 else []
+    existing_symbols = set([es.strip().upper() for es in existing_symbols])
+    known_symbols = None
 
     # make random starting order
     random.shuffle(possible_symbols)
+    possible_symbols = set(possible_symbols)
 
     print(f"fetched last state {len(existing_symbols)} symbols in {(datetime.now() - started).seconds / 60} minutes")
     _save_exisiting_symbls(existing_symbols, output)
@@ -71,28 +74,27 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         exit(0)
 
     yf_session = YFSession(tor_socks_port, tor_control_port, tor_control_password)
-    possible_symbols = set(possible_symbols)
+
     while len(possible_symbols) > 0:
         query = possible_symbols.pop()
         i, count = -1, -1
 
-        for i in range(retries):
-            if query in existing_symbols: break
+        if query not in existing_symbols:
+            for i in range(retries):
+                try:
+                    if not no_ease: sleep(random.random() + 0.2)  # just ease a bit on the server
+                    df, count = _next_request(yf_session.rsession, query)
+                    break
+                except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
+                    sleep_amt = int(math.pow(5, i + 1))
+                    print(f"Retry attempt: {i+1} of {retries}. Sleep period: {sleep_amt} seconds.", e)
+                    sleep(sleep_amt)
 
-            try:
-                if not no_ease: sleep(random.random() + 0.2)  # just ease a bit on the server
-                df, count = _next_request(yf_session.rsession, query)
-                break
-            except (requests.HTTPError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, requests.exceptions.ConnectionError) as e:
-                sleep_amt = int(math.pow(5, i + 1))
-                print(f"Retry attempt: {i+1} of {retries}. Sleep period: {sleep_amt} seconds.", e)
-                sleep(sleep_amt)
+                    # reset session for a new random user agent
+                    yf_session.reset_session()
 
-                # reset session for a new random user agent
-                yf_session.reset_session()
-
-        if i >= retries:
-            raise ValueError(f"Stop loop after {retries} failed retries")
+            if i >= retries:
+                raise ValueError(f"Stop loop after {retries} failed retries")
 
         if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
             letters = options_search_characters if query[-1].isnumeric() else general_search_characters
@@ -102,7 +104,7 @@ def cli(time, retries, output, repo_database, known_symbols, fetch_known_symbols
         if count > 0:
             # remove symbols we already have in the database and update the known symbols accordingly
             df = df[~df["symbol"].isin(existing_symbols)]
-            existing_symbols.extend(df["symbol"].to_list())
+            existing_symbols.update(df["symbol"].to_list())
 
             # save remainder to output file
             if os.path.exists(output):
