@@ -2,6 +2,9 @@
 
 set -e
 
+echo "$1 $2 $3"
+echo fin-get $INPUT_COMMAND1 $INPUT_COMMAND2 $INPUT_COMMAND_ARGS
+
 # prepare dolt environment
 echo dolt config
 dolt config --global --add user.email 'bot@bot.bot'
