@@ -9,6 +9,7 @@ click
 investpy
 lxml
 pandas
+quart
 request-boost
 requests
 requests-random-user-agent

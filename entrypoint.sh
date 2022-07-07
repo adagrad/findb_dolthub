@@ -9,6 +9,7 @@ echo fin-get $1 $2 $3
 echo dolt config
 dolt config --global --add user.email "$DOLTHUB_EMAIL"
 dolt config --global --add user.name "$DOLTHUB_USER"
+dolt config --global --add user.creds "$DOLTHUB_SECRET"
 dolt config --list
 
 # clone schema branch
@@ -21,7 +22,7 @@ dolt fetch origin schema
 dolt checkout schema
 
 # add dolt credentials
-dolt config --local --add user.creds "$DOLTHUB_SECRET"
+# dolt config --local --add user.creds "$DOLTHUB_SECRET"
 # dolt config --list
 
 # branch off into a data branch
