@@ -11,6 +11,7 @@ dolt config --global --add user.email "$DOLTHUB_EMAIL"
 dolt config --global --add user.name "$DOLTHUB_USER"
 dolt config --global --add user.creds "$DOLTHUB_SECRET"
 dolt config --list
+cat ~/.dolt/config_global.json
 
 # clone schema branch
 echo dolt init and fetch "$REPO/$DATABASE"
