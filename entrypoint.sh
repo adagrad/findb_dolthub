@@ -23,10 +23,6 @@ dolt remote add origin https://doltremoteapi.dolthub.com/$REPO/$DATABASE
 dolt fetch origin schema
 dolt checkout schema
 
-# add dolt credentials
-# dolt config --local --add user.creds "$DOLTHUB_SECRET"
-# dolt config --list
-
 # branch off into a data branch
 BRANCH=`echo $RANDOM | md5sum | head -c 20`
 BRANCH="$1/$2/$BRANCH"

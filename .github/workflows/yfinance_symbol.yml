@@ -3,8 +3,8 @@ name: "Find New Symbols"
 on:
   workflow_dispatch:
   schedule:
-    # run once a month
-    - cron: "0 1 1 * *"
+    # run once a week
+    - cron: "0 1 * * 3"
 
 jobs:
   hello_world_job:
@@ -21,4 +21,4 @@ jobs:
         with:
           command1: yfinance
           command2: symbol
-          command_args: "--time 15 --dolt-load"
+          command_args: "--time 300 --dolt-load"
