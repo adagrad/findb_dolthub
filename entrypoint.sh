@@ -7,17 +7,18 @@ echo fin-get $1 $2 $3
 
 # prepare dolt environment
 echo dolt config
-dolt config --global --add user.email "$DOLTHUB_EMAIL"
-dolt config --global --add user.name "$DOLTHUB_USER"
-dolt config --global --add user.creds "$DOLTHUB_SECRET"
+echo "$DOLTHUB_SECRET_JWT" > /tmp/$DOLTHUB_SECRET.jwk
+dolt creds import /tmp/$DOLTHUB_SECRET.jwk
+
+dolt login $DOLTHUB_SECRET
 dolt config --list
-cat ~/.dolt/config_global.json
 
 # clone schema branch
 echo dolt init and fetch "$REPO/$DATABASE"
 mkdir $DATABASE && cd $DATABASE
 
 dolt init
+dolt config --list
 dolt remote add origin https://doltremoteapi.dolthub.com/$REPO/$DATABASE
 dolt fetch origin schema
 dolt checkout schema
