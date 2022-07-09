@@ -22,13 +22,15 @@ quote_table_name = 'yfinance_quote'
 
 
 @click.command()
+@click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
 @click.option('-w', '--where', type=str, default=None, help='A "where" constraint provided for the selection of symbols from the database')
 @click.option('-s', '--symbols', type=str, default=None, help='A file of symbols (one per line) to fetch prices')
 @click.option('-o', '--output-dir', type=str, default='.', help='Path to store downloaded csv files')
-@click.option('-t', '--threads', type=int, default=10, help='Number of parallel threads')
+@click.option('-p', '--parallel-threads', type=int, default=10, help='Number of parallel threads')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
-def cli(repo_database, where, symbols, output_dir, threads, dolt_load):
+def cli(time, repo_database, where, symbols, output_dir, threads, dolt_load):
+    max_runtime = datetime.datetime.now() + timedelta(minutes=time)
     if repo_database == "" or repo_database == "None":
         repo_database = None
 
@@ -41,7 +43,7 @@ def cli(repo_database, where, symbols, output_dir, threads, dolt_load):
     # create a thread pool and wait until all jobs completed
     with ThreadPoolExecutor(max_workers=threads) as executor:
         for symbol in symbols:
-            executor.submit(partial(_fetch_data, database=repo_database, symbol=symbol, dolt_load=dolt_load, path=output_dir))
+            executor.submit(partial(_fetch_data, database=repo_database, symbol=symbol, dolt_load=dolt_load, path=output_dir, max_runtime=max_runtime))
 
 
 def _select_tickers(database, where, symbols_file):
@@ -53,7 +55,11 @@ def _select_tickers(database, where, symbols_file):
     return fetched_symbols
 
 
-def _fetch_data(database, symbol, path='.', dolt_load=False):
+def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
+    if max_runtime is not None and datetime.datetime.now() >= max_runtime:
+        print("max time reachedm exit before fetching", symbol)
+        return
+        
     try:
         tz_info = pytz.timezone('US/Eastern')  # TODO derive from exchange
         ticker = yf.Ticker(symbol)

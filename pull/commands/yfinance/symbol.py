@@ -3,7 +3,6 @@ import math
 import os.path
 import random
 import sys
-import urllib.parse
 from datetime import datetime
 from time import sleep
 from urllib.parse import quote
@@ -11,7 +10,6 @@ from urllib.parse import quote
 import click
 import pandas as pd
 import requests
-from request_boost import boosted_requests
 
 from modules.dolt_api import fetch_symbols
 from modules.requests_session import RequestsSession

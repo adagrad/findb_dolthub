@@ -1,0 +1,24 @@
+name: "Get new NYSE quotes"
+
+on:
+  workflow_dispatch:
+  schedule:
+    # run once a week
+    - cron: "0 1 * * 0"
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: A job to look for new quotes
+    steps:
+      - name: lookup new symbols
+        uses: adagrad/findb_dolthub@v1
+        env:
+          REPO: adagrad
+          DATABASE: findb
+          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+        with:
+          command1: yfinance
+          command2: quote
+          command_args: "-w \"exchange='NYQ'\" --time 300 --dolt-load"
