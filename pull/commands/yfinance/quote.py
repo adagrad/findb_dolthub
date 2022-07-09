@@ -29,7 +29,7 @@ quote_table_name = 'yfinance_quote'
 @click.option('-o', '--output-dir', type=str, default='.', help='Path to store downloaded csv files')
 @click.option('-p', '--parallel-threads', type=int, default=10, help='Number of parallel threads')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
-def cli(time, repo_database, where, symbols, output_dir, threads, dolt_load):
+def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_load):
     max_runtime = datetime.datetime.now() + timedelta(minutes=time)
     if repo_database == "" or repo_database == "None":
         repo_database = None
@@ -41,7 +41,7 @@ def cli(time, repo_database, where, symbols, output_dir, threads, dolt_load):
     symbols = _select_tickers(repo_database, where, symbols)
 
     # create a thread pool and wait until all jobs completed
-    with ThreadPoolExecutor(max_workers=threads) as executor:
+    with ThreadPoolExecutor(max_workers=parallel_threads) as executor:
         for symbol in symbols:
             executor.submit(partial(_fetch_data, database=repo_database, symbol=symbol, dolt_load=dolt_load, path=output_dir, max_runtime=max_runtime))
 
@@ -59,7 +59,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
     if max_runtime is not None and datetime.datetime.now() >= max_runtime:
         print("max time reachedm exit before fetching", symbol)
         return
-        
+
     try:
         tz_info = pytz.timezone('US/Eastern')  # TODO derive from exchange
         ticker = yf.Ticker(symbol)
