@@ -76,9 +76,10 @@ def _select_tickers(database, where, symbols_file):
 
 def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
     if max_runtime is not None and datetime.datetime.now() >= max_runtime:
-        print("max time reachedm exit before fetching", symbol)
+        print("max time reached exit before fetching", symbol)
         return
 
+    res = None
     try:
         tz_info = pytz.timezone('US/Eastern')  # TODO derive from exchange
         ticker = yf.Ticker(symbol)
@@ -86,7 +87,8 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         # check if price data is already available in database and what the latest date is
         query = f"select max(epoch) as epoch from {quote_table_name} where symbol='{symbol}'"
         res = fetch_rows(database, query, first_or_none=True)
-        last_price_date = datetime.datetime.fromtimestamp(float(res["epoch"]), tz=tz_info) if res is not None else None
+        has_valid_epoch = res is not None and "epoch" in res and res["epoch"] is not None
+        last_price_date = datetime.datetime.fromtimestamp(float(res["epoch"]), tz=tz_info) if has_valid_epoch else None
 
         # fetch data, and overwrite the last couple of days in case of error corrections
         if last_price_date is None:
@@ -94,7 +96,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
             df = ticker.history(period='max')
         else:
             print(f"fetch for new prices from {last_price_date}")
-            df = ticker.history(start=last_price_date - timedelta(days=5))
+            df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
 
         # insert timezone from exchange
         df.insert(0, "tzinfo", str(tz_info))
@@ -126,7 +128,8 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         else:
             print(f"dolt table import -u {quote_table_name} {csv_file}")
     except Exception as e:
-        traceback.print_exc(e)
+        print("ERROR for", symbol, res, e)
+        traceback.print_exc()
         raise e
 
 
