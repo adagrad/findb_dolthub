@@ -43,8 +43,24 @@ def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_
 
     # create a thread pool and wait until all jobs completed
     with ThreadPoolExecutor(max_workers=parallel_threads) as executor:
-        for symbol in symbols:
-            executor.submit(partial(_fetch_data, database=repo_database, symbol=symbol, dolt_load=dolt_load, path=output_dir, max_runtime=max_runtime))
+        futures = \
+            [executor.submit(
+                partial(
+                    _fetch_data,
+                    database=repo_database,
+                    symbol=symbol,
+                    dolt_load=dolt_load,
+                    path=output_dir,
+                    max_runtime=max_runtime
+                )
+            ) for symbol in symbols]
+
+        try:
+            for future in futures:
+                future.result()
+        except KeyboardInterrupt:
+            print("SIGTERM stopping thread pool!")
+            executor.shutdown(wait=False, cancel_futures=True)
 
 
 def _select_tickers(database, where, symbols_file):
