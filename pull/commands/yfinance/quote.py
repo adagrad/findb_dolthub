@@ -6,7 +6,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
-
+from threading import Lock
 import click
 import pytz
 import yfinance as yf
@@ -17,6 +17,7 @@ if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
 
+threadlock = Lock()
 symbol_table_name = 'yfinance_symbol'
 quote_table_name = 'yfinance_quote'
 
@@ -30,7 +31,7 @@ quote_table_name = 'yfinance_quote'
 @click.option('-p', '--parallel-threads', type=int, default=10, help='Number of parallel threads')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
 def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_load):
-    max_runtime = datetime.datetime.now() + timedelta(minutes=time)
+    max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
     if repo_database == "" or repo_database == "None":
         repo_database = None
 
@@ -99,10 +100,13 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         # load csv into dolt branch
         if dolt_load:
             if os.path.exists(csv_file):
-                exit(os.system(f"bash -c 'dolt table import -u {quote_table_name} {csv_file}'"))
+                threadlock.acquire()
+                try:
+                    os.system(f"bash -c 'dolt table import -u {quote_table_name} {csv_file}'")
+                finally:
+                    threadlock.release()
         else:
             print(f"dolt table import -u {quote_table_name} {csv_file}")
-            exit(0)
     except Exception as e:
         traceback.print_exc(e)
         raise e
