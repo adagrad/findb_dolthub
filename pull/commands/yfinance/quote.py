@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
 from threading import Lock
+from time import sleep
+
 import click
 import pytz
 import yfinance as yf
@@ -56,8 +58,8 @@ def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_
             ) for symbol in symbols]
 
         try:
-            for future in futures:
-                future.result()
+            while not all([future.done() for future in futures]):
+                sleep(0.2)
         except KeyboardInterrupt:
             print("SIGTERM stopping thread pool!")
             executor.shutdown(wait=False, cancel_futures=True)
@@ -82,9 +84,9 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         ticker = yf.Ticker(symbol)
 
         # check if price data is already available in database and what the latest date is
-        query = f"select max(epoch) as epoch from {quote_table_name} where symbol={symbol}"
+        query = f"select max(epoch) as epoch from {quote_table_name} where symbol='{symbol}'"
         res = fetch_rows(database, query, first_or_none=True)
-        last_price_date = datetime.datetime.fromtimestamp(res["epoch"], tz=tz_info) if res is not None else None
+        last_price_date = datetime.datetime.fromtimestamp(float(res["epoch"]), tz=tz_info) if res is not None else None
 
         # fetch data, and overwrite the last couple of days in case of error corrections
         if last_price_date is None:
