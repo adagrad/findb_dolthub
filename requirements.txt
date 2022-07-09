@@ -9,6 +9,8 @@ click
 investpy
 lxml
 pandas
+pyaml_env
+python-dotenv
 quart
 request-boost
 requests

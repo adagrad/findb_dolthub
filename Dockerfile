@@ -1,5 +1,6 @@
 # docker build . -t finget
 FROM python:3.8
+LABEL org.opencontainers.image.source=https://github.com/adagrad/findb_dolthub
 
 RUN apt-get update && apt-get install -y tor
 

@@ -13,6 +13,7 @@ import pandas as pd
 import requests
 from request_boost import boosted_requests
 
+from modules.dolt_api import fetch_symbols
 from modules.requests_session import RequestsSession
 
 if not hasattr(sys.modules[__name__], '__file__'):
@@ -124,28 +125,7 @@ def _get_symbol_sets(known_symbols_file, repo_database, resume_file, max_dolt_fe
 
 
 def _fetch_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
-    url = 'https://dolthub.com/api/v1alpha1/' + database +'/main?q='
-    query = 'select symbol from ' + table_name + ' order by symbol limit {offset}, {limit}'
-    offset = page_size * nr_jobs
-
-    pages = [(x * page_size, x * page_size + page_size) for x in range(nr_jobs)]
-    existing_symbols = []
-
-    for i in range(max_batches):
-        urls = [url + urllib.parse.quote(query.format(offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
-        print("submit batch", i, "of batch size", urls)
-        results = boosted_requests(urls=urls, no_workers=4, max_tries=max_retries, timeout=5, parse_json=True, verbose=False)
-        results = [r['rows'] for r in results]
-
-        for r in results:
-            for s in r:
-                existing_symbols.append(s['symbol'])
-
-        # check if we have a full last batch
-        if len(results[-1]) < page_size:
-            break
-
-    return existing_symbols
+    return fetch_symbols(database, table_name, max_retries=max_retries, nr_jobs=nr_jobs, page_size=page_size, max_batches=max_batches)
 
 
 def _get_max_symbol_length(repo_database, default_value=21):
