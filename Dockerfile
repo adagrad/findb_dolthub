@@ -10,8 +10,9 @@ RUN pip install -r requirements.txt
 RUN curl -L https://github.com/dolthub/dolt/releases/latest/download/install.sh | bash
 
 COPY entrypoint.sh /entrypoint.sh
-ADD pull /opt/
+COPY entrypoint_merge.sh /entrypoint_merge.sh
 COPY torrc.default /etc/tor/torrc.default
+ADD pull /opt/
 
 EXPOSE 9050
 EXPOSE 9051
