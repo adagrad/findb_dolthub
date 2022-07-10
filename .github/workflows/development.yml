@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: list commands
         id: test
-        uses: adagrad/findb_dolthub@v1
+        uses: adagrad/findb_dolthub@main
         env:
           REPO: adagrad
           DATABASE: findb
@@ -25,7 +25,7 @@ jobs:
           command_args: "--help"
       # TODO add reusable pull merge push step here
       - name: clone merge push
-        uses: adagrad/findb_dolthub@v1
+        uses: adagrad/findb_dolthub@main
         env:
           REPO: adagrad
           DATABASE: findb
@@ -34,4 +34,5 @@ jobs:
           DOLT_COMMIT_ARGS: "-m pipeline_merge_test --allow-empty"
         with:
           entrypoint: /entrypoint_merge.sh
-          args: "lala ${{ steps.test.outputs.branch }}"
+          # args: "lala ${{ steps.test.outputs.branch }}"
+          command1: "lala ${{ steps.test.outputs.branch }}"
