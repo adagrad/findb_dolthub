@@ -33,4 +33,5 @@ jobs:
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
           DOLT_COMMIT_ARGS: "-m pipeline_merge_test --allow-empty"
         with:
-          entrypoint: "/entrypoint_merge.sh ${{ steps.test.outputs.branch }}"
+          entrypoint: /entrypoint_merge.sh
+          command_args: ${{ steps.test.outputs.branch }}
