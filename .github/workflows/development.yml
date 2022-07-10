@@ -34,5 +34,4 @@ jobs:
           DOLT_COMMIT_ARGS: "-m pipeline_merge_test --allow-empty"
         with:
           entrypoint: /entrypoint_merge.sh
-          # args: "lala ${{ steps.test.outputs.branch }}"
-          command1: "lala ${{ steps.test.outputs.branch }}"
+          command1: ${{ steps.test.outputs.branch }}
