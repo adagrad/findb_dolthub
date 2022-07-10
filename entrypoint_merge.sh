@@ -14,9 +14,11 @@ dolt login $DOLTHUB_SECRET
 dolt config --list
 
 # clone repository
-dolt clone "$REPO/$DATABASE" && cd "$DATABASE"
+#dolt clone "$REPO/$DATABASE" && cd "$DATABASE"
+cd "$DATABASE"
 
 # merge, commit, push, delete
+dolt pull
 dolt merge origin "$1"
 dolt commit $DOLT_COMMIT_ARGS
 dolt push
