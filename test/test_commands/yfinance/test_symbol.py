@@ -1,8 +1,10 @@
+import os
+from unittest import TestCase
+
 import pandas as pd
 
-from commands.yfinance.symbol import YFSession, _save_symbols, _load_symbols, _fetch_existing_symbols, _get_symbol_sets, _get_max_symbol_length, _download_new_symbols
-from unittest import TestCase
-import os
+from commands.yfinance.symbol import YFSession, _save_symbols, _load_symbols, _fetch_existing_symbols, _get_symbol_sets, \
+    _get_max_symbol_length, _download_new_symbols
 
 
 class TestSymbol(TestCase):
