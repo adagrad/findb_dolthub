@@ -18,8 +18,8 @@ dolt config --list
 cd "$DATABASE"
 
 # merge, commit, push, delete
-dolt pull
-dolt merge origin "$1"
+dolt fetch origin "$1"
+dolt merge "origin/$1"
 dolt commit $DOLT_COMMIT_ARGS
 dolt push
 dolt push origin --delete "$1"
