@@ -18,6 +18,6 @@ dolt clone "$REPO/$DATABASE" && cd "$DATABASE"
 
 # merge, commit, push, delete
 dolt merge origin "$1"
-dolt commit -m"merged $1"
+dolt commit $DOLT_COMMIT_ARGS
 dolt push
 dolt push origin --delete "$1"

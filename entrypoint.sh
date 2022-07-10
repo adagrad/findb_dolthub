@@ -38,7 +38,7 @@ fin-get $1 $2 $3
 
 # commit changes and push data branch
 dolt add .
-dolt commit -m"gh action"
+dolt commit $DOLT_COMMIT_ARGS
 dolt push --set-upstream origin "$BRANCH"
 
 # set output variable containing the branch we have worked on
