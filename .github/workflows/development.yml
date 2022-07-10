@@ -1,10 +1,9 @@
 name: "Test the workflow still works after publishing a new image"
 
 on:
-  #registry_package:
-  #  types: [ published, updated ]
-  schedule:
-    - cron: "* * 29 2 0"
+  workflow_dispatch:
+  registry_package:
+    types: [ published, updated ]
 
 jobs:
   development_job:
