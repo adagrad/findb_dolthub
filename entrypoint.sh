@@ -42,4 +42,5 @@ dolt commit $DOLT_COMMIT_ARGS
 dolt push --set-upstream origin "$BRANCH"
 
 # set output variable containing the branch we have worked on
+echo "set output variable branch=$BRANCH"
 echo "::set-output name=branch::$BRANCH"

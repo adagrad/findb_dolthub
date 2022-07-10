@@ -3,7 +3,7 @@
 set -e
 
 # show the command we intend executing
-echo merge $1 into main
+echo "merge <$1> into <main>"
 
 # prepare dolt environment
 echo dolt config

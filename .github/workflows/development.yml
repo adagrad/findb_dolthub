@@ -18,7 +18,7 @@ jobs:
           DATABASE: findb
           DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m 'pipeline test' --allow-empty"
+          DOLT_COMMIT_ARGS: "-m pipeline_test --allow-empty"
         with:
           command1: yfinance
           command2: symbol
@@ -31,7 +31,6 @@ jobs:
           DATABASE: findb
           DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m 'pipeline merge test' --allow-empty"
+          DOLT_COMMIT_ARGS: "-m pipeline_merge_test --allow-empty"
         with:
-          entrypoint: /entrypoint_merge.sh
-          args: ${{ steps.test.outputs.branch }}
+          entrypoint: "/entrypoint_merge.sh ${{ steps.test.outputs.branch }}"
