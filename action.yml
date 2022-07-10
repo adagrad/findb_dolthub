@@ -10,6 +10,9 @@ inputs:
   command_args:
     description: 'Sub command arguments'
     required: false
+outputs:
+  branch:
+    description: 'outputs the dolt branch the action made changes to'
 runs:
   using: 'docker'
   # image: 'Dockerfile'

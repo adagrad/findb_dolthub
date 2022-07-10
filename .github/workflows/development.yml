@@ -1,0 +1,33 @@
+name: "Test the workflow still works after publishing a new image"
+
+on:
+  registry_package:
+    types: [ published, updated ]
+
+jobs:
+  hello_world_job:
+    runs-on: ubuntu-latest
+    name: Test workflow
+    steps:
+      - name: list commands
+        uses: adagrad/findb_dolthub@v1
+        env:
+          REPO: adagrad
+          DATABASE: findb
+          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+        with:
+          command1: yfinance
+          command2: symbol
+          command_args: "--help"
+      # TODO add reusable pull merge push step here
+      - name: clone merge push
+        uses: adagrad/findb_dolthub@v1
+        env:
+          REPO: adagrad
+          DATABASE: findb
+          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+        with:
+          entrypoint: /run.sh
+          args: --help
