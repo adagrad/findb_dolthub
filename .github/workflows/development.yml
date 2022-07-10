@@ -3,7 +3,8 @@ name: "Test the workflow still works after publishing a new image"
 on:
   registry_package:
     types: [ published, updated ]
-
+  schedule:
+    -
 jobs:
   hello_world_job:
     runs-on: ubuntu-latest
