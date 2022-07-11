@@ -3,7 +3,7 @@ import math
 import os.path
 import random
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from time import sleep
 from urllib.parse import quote
 
@@ -49,7 +49,8 @@ class YFSession(RequestsSession):
 @click.option('--retries', type=int, default=4, help='Maximum number of retries (default=4)')
 def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
     started = datetime.now()
-    print(f"started at: {started}, write results to {os.path.abspath(output)}")
+    max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
+    print(f"started at: {started}, write results to {os.path.abspath(output)} run until: {max_runtime}")
 
     # get maximum lengh of symbols
     max_symbol_length = _get_max_symbol_length(repo_database)
@@ -64,11 +65,24 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
         exit(0)
 
     yf_session = YFSession(tor_socks_port, tor_control_port, tor_control_password)
+    _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, not no_ease, max_runtime, yf_session, output)
 
+    # finalize the program
+    csv_file = os.path.abspath(output)
+    if dolt_load:
+        rc, out = dolt_load_file(table_name, csv_file)
+        exit(rc)
+    else:
+        print(f"dolt table import -u {table_name} {csv_file}")
+        exit(0)
+
+
+def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, ease, max_runtime, yf_session, output):
+    counter = 0
     while len(possible_symbols) > 0:
         try:
             query = possible_symbols.pop()
-            df, count = _download_new_symbols(query, existing_symbols, retries, not no_ease, yf_session)
+            df, count = _download_new_symbols(query, existing_symbols, retries, ease, yf_session)
 
             if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
                 letters = options_search_characters if query[-1].isnumeric() else general_search_characters
@@ -89,21 +103,17 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
 
                 # save existing symbols for retry purposes
                 _save_symbols(existing_symbols, output + ".existing.symbols")
+
+            # loop counter
+            counter += 1
         finally:
             # check if we still have some time left to run another search
-            if time is not None and (datetime.now() - started).seconds / 60 > time:
-                print(f"maximum allowed {time} minutes reached")
+            if max_runtime is not None and datetime.now() > max_runtime:
+                print(f"maximum allowed minutes reached")
                 _save_symbols(possible_symbols, output + ".possible.symbols")
                 break
 
-    # finalize the program
-    csv_file = os.path.abspath(output)
-    if dolt_load:
-        rc, out = dolt_load_file(table_name, csv_file)
-        exit(rc)
-    else:
-        print(f"dolt table import -u {table_name} {csv_file}")
-        exit(0)
+    return counter
 
 
 def _get_symbol_sets(known_symbols_file, repo_database, resume_file, max_dolt_fetch_retries, **kwargs):

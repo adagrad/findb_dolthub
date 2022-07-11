@@ -1,15 +1,23 @@
 import os
+from datetime import datetime
 from unittest import TestCase
 
 import pandas as pd
 
 from commands.yfinance.symbol import YFSession, _save_symbols, _load_symbols, _fetch_existing_symbols, _get_symbol_sets, \
-    _get_max_symbol_length, _download_new_symbols
+    _get_max_symbol_length, _download_new_symbols, _look_for_new_symbols
 
 
 class TestSymbol(TestCase):
 
     test_path = os.path.abspath(os.path.dirname(__file__))
+
+    def test__look_for_new_symbols(self):
+        if os.path.exists("/tmp/TestSymbol.csv"):
+            os.unlink("/tmp/TestSymbol.csv")
+
+        loops = _look_for_new_symbols(set(["AAPL", "B"]), set(["B"]), 1, 1, True, datetime.now(), YFSession(), "/tmp/TestSymbol.csv")
+        self.assertEqual(loops, 1)
 
     def test__get_max_symbol_length(self):
         self.assertEqual(_get_max_symbol_length("adagrad/findb"), 21)
