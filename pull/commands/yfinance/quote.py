@@ -1,25 +1,25 @@
+import contextlib
 import datetime
 import inspect
+import io
 import os
 import sys
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
-from threading import Lock
 from time import sleep
 
 import click
 import pytz
 import yfinance as yf
 
-from modules.dolt_api import fetch_symbols, fetch_rows
+from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
 
-threadlock = Lock()
 symbol_table_name = 'yfinance_symbol'
 quote_table_name = 'yfinance_quote'
 
@@ -91,12 +91,18 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         last_price_date = datetime.datetime.fromtimestamp(float(res["epoch"]), tz=tz_info) if has_valid_epoch else None
 
         # fetch data, and overwrite the last couple of days in case of error corrections
-        if last_price_date is None:
-            print("no last price date available, fetch max history")
-            df = ticker.history(period='max')
-        else:
-            print(f"fetch for new prices from {last_price_date}")
-            df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
+        with io.StringIO() as output:
+            with contextlib.redirect_stdout(output):
+                if last_price_date is None:
+                    print("no last price date available, fetch max history")
+                    df = ticker.history(period='max')
+                else:
+                    print(f"fetch for new prices from {last_price_date}")
+                    df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
+
+            if "No data found, symbol may be delisted" in output.getvalue():
+                # TODO add some flag to the symbol
+                pass
 
         # insert timezone from exchange
         df.insert(0, "tzinfo", str(tz_info))
@@ -119,12 +125,10 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
 
         # load csv into dolt branch
         if dolt_load:
-            if os.path.exists(csv_file):
-                threadlock.acquire()
-                try:
-                    os.system(f"bash -c 'dolt table import -u {quote_table_name} {csv_file}'")
-                finally:
-                    threadlock.release()
+            rc, out = dolt_load_file(quote_table_name, csv_file)
+            if "There are fewer columns in the import file's schema than the table's schema" in out:
+                # TODO fix cases where the columns don't match
+                print(symbol, out)
         else:
             print(f"dolt table import -u {quote_table_name} {csv_file}")
     except Exception as e:

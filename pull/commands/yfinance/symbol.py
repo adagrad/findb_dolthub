@@ -11,7 +11,7 @@ import click
 import pandas as pd
 import requests
 
-from modules.dolt_api import fetch_symbols
+from modules.dolt_api import fetch_symbols, dolt_load_file
 from modules.requests_session import RequestsSession
 
 if not hasattr(sys.modules[__name__], '__file__'):
@@ -97,11 +97,12 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
                 break
 
     # finalize the program
+    csv_file = os.path.abspath(output)
     if dolt_load:
-        if os.path.exists(output):
-            exit(os.system(f"bash -c 'dolt table import -u {table_name} {os.path.abspath(output)}'"))
+        rc, out = dolt_load_file(table_name, csv_file)
+        exit(rc)
     else:
-        print(f"dolt table import -u {table_name} {os.path.abspath(output)}")
+        print(f"dolt table import -u {table_name} {csv_file}")
         exit(0)
 
 
@@ -167,10 +168,13 @@ def _download_new_symbols(query, existing_symbols, retries, ease, yf_session, _f
     return df, count
 
 
-def _next_request(rsession, query_str, max_retries=4):
+def _next_request(rsession, query_str):
     def decode_symbols_container(json):
         df = pd.DataFrame(json['data']['items'])\
             .rename(columns={"exch": "exchange", "exchDisp": "exchange_description", "typeDisp": "type_description"})
+
+        # add active as default value for the symbols we just found
+        df['active'] = 1
 
         return df
 

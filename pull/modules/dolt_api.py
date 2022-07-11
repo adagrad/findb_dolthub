@@ -1,7 +1,14 @@
+import contextlib
+import io
+import os
 import urllib.parse
+from threading import Lock
+from typing import Tuple
 
 import requests
 from request_boost import boosted_requests
+
+threadlock = Lock()
 
 
 def fetch_symbols(database, table_name, where=None, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
@@ -38,3 +45,17 @@ def fetch_rows(database, query, offset=0, limit=200, first_or_none=False):
     rows = response['rows']
     return (rows[0] if len(rows) > 0 else None) if first_or_none else rows
 
+
+def dolt_load_file(table_name, csv_file) -> Tuple[int, str]:
+    if os.path.exists(csv_file):
+        threadlock.acquire()
+        try:
+            with io.StringIO() as output:
+                with contextlib.redirect_stdout(output):
+                    rc = os.system(f"bash -c 'dolt table import -u {table_name} {csv_file}'")
+
+                return rc, str(output.getvalue())
+        finally:
+            threadlock.release()
+    else:
+        return 1, "File Not Found"
