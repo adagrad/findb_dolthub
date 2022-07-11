@@ -49,7 +49,7 @@ class YFSession(RequestsSession):
 @click.option('--retries', type=int, default=4, help='Maximum number of retries (default=4)')
 def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
     started = datetime.now()
-    max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
+    max_runtime = datetime.now() + timedelta(minutes=time) if time is not None else None
     print(f"started at: {started}, write results to {os.path.abspath(output)} run until: {max_runtime}")
 
     # get maximum lengh of symbols
