@@ -23,7 +23,7 @@ jobs:
           command1: yfinance
           command2: symbol
           command_args: "--help"
-      # TODO add reusable pull merge push step here
+      # copy paste this to other steps as reusable steps are not available only reusable jobs
       - name: clone merge push
         uses: adagrad/findb_dolthub@main
         env:
