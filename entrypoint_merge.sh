@@ -34,7 +34,8 @@ if [ $? -eq 0 ]; then
 fi
 
 echo dolt commit "$DOLT_COMMIT_ARGS"
-dolt commit $DOLT_COMMIT_ARGS || true
+dolt add . || true
+dolt commit $DOLT_COMMIT_ARGS
 
 echo dolt push main
 dolt push
