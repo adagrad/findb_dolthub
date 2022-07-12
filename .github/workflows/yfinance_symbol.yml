@@ -12,26 +12,20 @@ jobs:
     name: A job to look for new symbols
     steps:
       - name: lookup new symbols
+        id: symbols
         uses: adagrad/findb_dolthub@v1
         env:
           REPO: adagrad
           DATABASE: findb
           DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m 'add symbols'"
+          DOLT_COMMIT_ARGS: "-m add_symbols"
         with:
           command1: yfinance
           command2: symbol
           command_args: "--time 300 --dolt-load"
-      # copy paste this to other steps as reusable steps are not available only reusable jobs
-      - name: clone merge push
-        uses: adagrad/findb_dolthub@main
-        env:
-          REPO: adagrad
-          DATABASE: findb
-          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
-          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m pipeline_merge_test --allow-empty"
-        with:
-          entrypoint: /entrypoint_merge.sh
-          command1: ${{ steps.test.outputs.branch }}
+
+  simulate_pr_merge:
+    uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
+    with:
+      branch: ${{ steps.symbols.outputs.branch }}

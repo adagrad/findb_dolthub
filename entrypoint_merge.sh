@@ -14,17 +14,11 @@ dolt login $DOLTHUB_SECRET
 dolt config --list
 
 # clone repository
-#dolt clone "$REPO/$DATABASE" && cd "$DATABASE"
-cd "$DATABASE"
+echo dolt clone
+dolt clone "$REPO/$DATABASE" && cd "$DATABASE"
 
-# merge, commit, push, delete
-echo pull main
-dolt branch -d main
-dolt fetch origin main
-dolt checkout main
-
-#echo dolt fetch origin "$1"
-#dolt fetch origin "$1"
+echo dolt fetch origin "$1"
+dolt fetch origin "$1"
 
 echo dolt merge origin/$1
 dolt merge "$1" | grep "CONFLICT"
