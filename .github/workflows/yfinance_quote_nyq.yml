@@ -22,7 +22,7 @@ jobs:
         with:
           command1: yfinance
           command2: quote
-          command_args: "-w \"exchange='NYQ'\" --time 300 --dolt-load"
+          command_args: "-w exchange='NYQ' --time 300 --dolt-load"
       # copy paste this to other steps as reusable steps are not available only reusable jobs
       - name: clone merge push
         uses: adagrad/findb_dolthub@main

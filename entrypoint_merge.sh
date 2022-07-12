@@ -5,6 +5,14 @@ set -e
 # show the command we intend executing
 echo "merge <$1> into <main>"
 
+# prepare dolt environment
+echo dolt config
+echo "$DOLTHUB_SECRET_JWT" > /tmp/$DOLTHUB_SECRET.jwk
+dolt creds import /tmp/$DOLTHUB_SECRET.jwk
+
+dolt login $DOLTHUB_SECRET
+dolt config --list
+
 # clone repository
 #dolt clone "$REPO/$DATABASE" && cd "$DATABASE"
 cd "$DATABASE"
@@ -12,15 +20,23 @@ cd "$DATABASE"
 # merge, commit, push, delete
 echo pull main
 dolt branch -d main
-dolt pull
+dolt fetch origin main
 dolt checkout main
 
-echo fetch and merge remote
-dolt fetch origin "$1"
-dolt merge "origin/$1"
-dolt commit $DOLT_COMMIT_ARGS
+#echo dolt fetch origin "$1"
+#dolt fetch origin "$1"
 
-echo push main
+echo dolt merge origin/$1
+dolt merge "$1" | grep "CONFLICT"
+if [ $? -eq 0 ]; then
+    echo resolve conflicts using theirs
+    dolt conflicts resolve --theirs .
+fi
+
+echo dolt commit "$DOLT_COMMIT_ARGS"
+dolt commit $DOLT_COMMIT_ARGS || true
+
+echo dolt push main
 dolt push
 
 echo delete remote

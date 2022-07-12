@@ -3,6 +3,7 @@
 set -e
 
 # show the command we intend executing
+pwd
 echo fin-get $1 $2 $3
 
 # prepare dolt environment

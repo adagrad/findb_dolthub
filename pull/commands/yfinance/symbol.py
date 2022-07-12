@@ -71,7 +71,7 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
     csv_file = os.path.abspath(output)
     print(f"dolt table import -u {table_name} {csv_file}")
     if dolt_load:
-        rc, out = dolt_load_file(table_name, csv_file)
+        rc, out, err = dolt_load_file(table_name, csv_file)
         exit(rc)
     else:
         exit(0)

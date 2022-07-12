@@ -1,6 +1,7 @@
 import contextlib
 import io
 import os
+import subprocess
 import urllib.parse
 from threading import Lock
 from typing import Tuple
@@ -46,16 +47,19 @@ def fetch_rows(database, query, offset=0, limit=200, first_or_none=False):
     return (rows[0] if len(rows) > 0 else None) if first_or_none else rows
 
 
-def dolt_load_file(table_name, csv_file) -> Tuple[int, str]:
+def dolt_load_file(table_name, csv_file) -> Tuple[int, str, str]:
     if os.path.exists(csv_file):
         threadlock.acquire()
         try:
-            with io.StringIO() as output:
-                with contextlib.redirect_stdout(output):
-                    rc = os.system(f"bash -c 'dolt table import -u {table_name} {csv_file}'")
-
-                return rc, str(output.getvalue())
+            # rc = os.system(f"bash -c 'dolt table import -u {table_name} {csv_file}'")
+            return execute_shell("dolt", "table", "import", "-u", table_name, csv_file)
         finally:
             threadlock.release()
     else:
-        return 1, "File Not Found"
+        return 1, "", "File Not Found"
+
+
+def execute_shell(command, *args):
+    result = subprocess.run([command, *args], capture_output=True, text=True)
+    print(command, *args, '\n\t .. ', result.returncode, result.stdout, result.stderr)
+    return result.returncode, result.stdout, result.stderr

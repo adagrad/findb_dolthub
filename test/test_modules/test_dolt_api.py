@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from modules.dolt_api import fetch_symbols, fetch_rows
+from modules.dolt_api import fetch_symbols, fetch_rows, execute_shell
 
 
 class TestDoltApi(TestCase):
@@ -30,3 +30,7 @@ class TestDoltApi(TestCase):
             )
 
             self.assertIsNotNone(fetch_rows("adagrad/findb", "select * from yfinance_symbol where symbol = 'AAPL'", first_or_none=True))
+
+    def test_run_shell_command(self):
+        rc, out, err = execute_shell("dolt", "table", "import", "-u", "lala", "foo.csv")
+        self.assertTrue('The current directory is not a valid dolt repository' in err)

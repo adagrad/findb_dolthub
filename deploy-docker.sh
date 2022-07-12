@@ -17,3 +17,5 @@ docker build -t finget .
 image=`docker images "finget" -q`
 docker tag $image ghcr.io/adagrad/finget:latest
 docker push ghcr.io/adagrad/finget:latest
+
+git tag v1 -f && git push --tags -f
