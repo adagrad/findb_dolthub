@@ -9,6 +9,8 @@ jobs:
   development_job:
     runs-on: ubuntu-latest
     name: Test workflow
+    outputs:
+      branch: ${{ steps.test.outputs.branch }}
     steps:
       - name: list commands
         id: test
@@ -25,5 +27,6 @@ jobs:
           command_args: "--help"
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
+    needs: development_job
     with:
-      branch: ${{ steps.test.outputs.branch }}
+      branch: ${{ needs.development_job.outputs.branch }}

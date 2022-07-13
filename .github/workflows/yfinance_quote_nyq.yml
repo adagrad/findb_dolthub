@@ -7,9 +7,11 @@ on:
     - cron: "0 1 * * 0"
 
 jobs:
-  hello_world_job:
+  fetch_quotes:
     runs-on: ubuntu-latest
     name: A job to look for new quotes
+    outputs:
+      branch: ${{ steps.quotes.outputs.branch }}
     steps:
       - name: lookup new symbols
         id: quotes
@@ -27,5 +29,6 @@ jobs:
 
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
+    needs: fetch_quotes
     with:
-      branch: ${{ steps.quotes.outputs.branch }}
+      branch: ${{ needs.fetch_quotes.outputs.branch }}

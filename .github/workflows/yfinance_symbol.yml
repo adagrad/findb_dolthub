@@ -7,9 +7,11 @@ on:
     - cron: "0 1 * * 3"
 
 jobs:
-  hello_world_job:
+  search_symbols:
     runs-on: ubuntu-latest
     name: A job to look for new symbols
+    outputs:
+      branch: ${{ steps.symbols.outputs.branch }}
     steps:
       - name: lookup new symbols
         id: symbols
@@ -27,5 +29,6 @@ jobs:
 
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
+    needs: search_symbols
     with:
-      branch: ${{ steps.symbols.outputs.branch }}
+      branch: ${{ needs.search_symbols.outputs.branch }}

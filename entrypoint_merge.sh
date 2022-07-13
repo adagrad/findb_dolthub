@@ -3,10 +3,12 @@
 set -e
 
 # show the command we intend executing
-echo "merge <$1> into <main>"
+commit_args=`echo $DOLT_COMMIT_ARGS`
+echo "merge <$1> into <main>, commit as $commit_args"
 
 # prepare dolt environment
 echo dolt config
+echo dolt version
 echo "$DOLTHUB_SECRET_JWT" > /tmp/$DOLTHUB_SECRET.jwk
 dolt creds import /tmp/$DOLTHUB_SECRET.jwk
 
@@ -21,15 +23,17 @@ echo dolt fetch origin "$1"
 dolt fetch origin "$1"
 
 echo dolt merge origin/$1
-dolt merge "$1" | grep "CONFLICT"
+set +e  # allow grep to fail
+dolt merge "origin/$1" | grep "CONFLICT"
 if [ $? -eq 0 ]; then
     echo resolve conflicts using theirs
     dolt conflicts resolve --theirs .
 fi
 
-echo dolt commit "$DOLT_COMMIT_ARGS"
+set -e
+echo dolt commit $commit_args
 dolt add . || true
-dolt commit $DOLT_COMMIT_ARGS
+dolt commit $commit_args
 
 echo dolt push main
 dolt push
