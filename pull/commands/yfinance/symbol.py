@@ -2,6 +2,7 @@ import inspect
 import math
 import os.path
 import random
+import re
 import sys
 from datetime import datetime, timedelta
 from time import sleep
@@ -20,7 +21,8 @@ if not hasattr(sys.modules[__name__], '__file__'):
 first_search_characters = 'abcdefghijklmnopqrstuvwxyz^'.upper()
 # a representation of 'abcdefghijklmnopqrstuvwxyz0123456789.=' but in statistical order
 general_search_characters = '012.ap5csnb63v47t8xem9flidgurqhokzwyj=+'.upper()
-options_search_characters = '0123456789PCa5snbvxemflidgurqhokzwyj=+.'.upper()
+options_search_characters = '0123456789'.upper()
+exchanges = ('.BA', '.AX', '.VI', '.BR', '.SA', '.CN', '.NE', '.TO', '.V', '.SN', '.SS', '.SZ', '.PR', '.CO', '.CA', '.TL', '.HE', '.NX', '.PA', '.BE', '.BM', '.DU', '.F', '.HM', '.HA', '.MU', '.SG', '.DE', '=X', '.AT', '.HK', '.BD', '.IC', '.BO', '.NS', '.JK', '.IR', '.TA', '.TI', '.MI', '.T', '.RG', '.VS', '.KL', '.MX', '.AS', '.NZ', '.OL', '.LS', '.QA', '.ME', '.SI', '.Jo', '.KS', '.KQ', '.MC', '.SAU', '.ST', '.SW', '.TWO', '.TW', '.BK', '.IS', '.L', '.IL', '.CBT', '.CME', '.NYB', '.CMX', '.NYM', '.CR')
 table_name = 'yfinance_symbol'
 
 query_string = {'device': 'console', 'returnMeta': 'true'}
@@ -84,10 +86,19 @@ def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length,
             query = possible_symbols.pop()
             df, count = _download_new_symbols(query, existing_symbols, retries, ease, yf_session)
 
-            if (count > 10 and len(query) < max_symbol_length + 1) or query in existing_symbols:
-                letters = options_search_characters if query[-1].isnumeric() else general_search_characters
-                for c in letters:
-                    possible_symbols.add(query + c)
+            if (query in existing_symbols or count > 10) and (len(query) < max_symbol_length + 1 and not query.endswith(exchanges)):
+                if query.endswith("."):
+                    # there can only come an exchange code from here
+                    for x in exchanges:
+                        possible_symbols.add(query[:-1] + x)
+                elif re.search(r"\d{4}[PC]$", query):
+                    # it is an options code there can only be numbers from here
+                    for n in options_search_characters:
+                        possible_symbols.add(query + n)
+                else:
+                    # else continue brute force searching
+                    for c in general_search_characters:
+                        possible_symbols.add(query + c)
 
             if count > 0:
                 # remove symbols we already have in the database and update the known symbols accordingly
@@ -134,7 +145,7 @@ def _get_symbol_sets(known_symbols_file, repo_database, resume_file, max_dolt_fe
 
 
 def _fetch_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
-    return fetch_symbols(database, table_name, max_retries=max_retries, nr_jobs=nr_jobs, page_size=page_size, max_batches=max_batches)
+    return fetch_symbols(database, max_retries=max_retries, nr_jobs=nr_jobs, page_size=page_size, max_batches=max_batches)
 
 
 def _get_max_symbol_length(repo_database, default_value=21):

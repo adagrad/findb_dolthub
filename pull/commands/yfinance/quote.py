@@ -21,8 +21,9 @@ if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
 
-symbol_table_name = 'yfinance_symbol'
+
 quote_meta_table_name = 'yfinance_quote_meta'
+quote_tz_table_name = 'tzinfo_exchange'
 quote_table_name = 'yfinance_quote'
 
 
@@ -71,7 +72,7 @@ def _select_tickers(database, where, symbols_file):
     if symbols_file is not None:
         return [s.strip().upper() for s in open(symbols_file).readlines() if len(s.strip()) > 0]
 
-    fetched_symbols = fetch_symbols(database, symbol_table_name, where)
+    fetched_symbols = fetch_symbols(database, where, with_timezone=True)
     print(f"fetched {len(fetched_symbols)} symbols from database")
     return fetched_symbols
 
@@ -81,22 +82,14 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         print("max time reached exit before fetching", symbol)
         return
 
-    res = None
     try:
-        tz_info = pytz.timezone('US/Eastern')  # TODO derive from exchange
-        ticker = yf.Ticker(symbol)
+        if isinstance(symbol, tuple):
+            symbol, tz_info = symbol[0], pytz.timezone(symbol[1])
+        else:
+            tz_info = pytz.timezone('US/Eastern')
 
-        # check if price data is already available in database and what the latest date is
-        query = f"""
-            select min(q.epoch) as min_epoch, max(q.epoch) as max_epoch
-              from {quote_table_name} q
-              left outer join {quote_meta_table_name} qm on qm.symbol = q.symbol 
-             where q.symbol='{symbol}'
-               and (qm.delisted = 0 or qm.delisted is null);
-        """
-        res = fetch_rows(database, query, first_or_none=True)
-        has_valid_epoch = res is not None and "max_epoch" in res and res["max_epoch"] is not None
-        last_price_date = datetime.datetime.fromtimestamp(float(res["max_epoch"]), tz=tz_info) if has_valid_epoch else None
+        ticker = yf.Ticker(symbol)
+        first_price_date, last_price_date = _fetch_last_date(database, symbol, tz_info)
         delisted = False
 
         # fetch data, and overwrite the last couple of days in case of error corrections
@@ -135,7 +128,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
         pd.DataFrame(
             [{
                 "symbol": symbol,
-                "min_epoch": float(res["max_epoch"]) if last_price_date is not None else df["epoch"].min(),
+                "min_epoch": float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min(),
                 "max_epoch": df["epoch"].max(),
                 "delisted": int(delisted),
                 "tz_info": str(tz_info)
@@ -153,9 +146,25 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None):
             print(f"dolt table import -u {quote_meta_table_name} {csv_file}.meta.csv")
             dolt_load_file(quote_meta_table_name, csv_file + ".meta.csv")
     except Exception as e:
-        print("ERROR for", symbol, res, e)
+        print("ERROR for", symbol, e)
         traceback.print_exc()
         raise e
+
+
+def _fetch_last_date(database, symbol, tz_info):
+    # check if price data is already available in database and what the latest date is
+    query = f""" 
+        select min(q.epoch) as min_epoch, max(q.epoch) as max_epoch
+          from {quote_table_name} q
+          left outer join {quote_meta_table_name} qm on qm.symbol = q.symbol 
+         where q.symbol='{symbol}'
+           and (qm.delisted = 0 or qm.delisted is null)
+    """
+    res = fetch_rows(database, query, first_or_none=True)
+    has_valid_epoch = res is not None and "max_epoch" in res and res["max_epoch"] is not None
+    first_price_date = datetime.datetime.fromtimestamp(float(res["min_epoch"]), tz=tz_info) if has_valid_epoch else None
+    last_price_date = datetime.datetime.fromtimestamp(float(res["max_epoch"]), tz=tz_info) if has_valid_epoch else None
+    return first_price_date, last_price_date
 
 
 if __name__ == '__main__':

@@ -20,7 +20,7 @@ class TestSymbol(TestCase):
         self.assertEqual(loops, 1)
 
     def test__get_max_symbol_length(self):
-        self.assertEqual(_get_max_symbol_length("adagrad/findb"), 21)
+        self.assertGreaterEqual(_get_max_symbol_length("adagrad/findb"), 21)
         self.assertEqual(_get_max_symbol_length("", 12), 12)
 
     def test__get_symbol_sets(self):

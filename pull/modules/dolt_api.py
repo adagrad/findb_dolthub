@@ -10,11 +10,21 @@ import requests
 from request_boost import boosted_requests
 
 threadlock = Lock()
+symbol_table_name = 'yfinance_symbol'
+tz_info_table_name = 'tzinfo_exchange'
 
 
-def fetch_symbols(database, table_name, where=None, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
+def fetch_symbols(database, where=None, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999, with_timezone=False):
     url = 'https://dolthub.com/api/v1alpha1/' + database +'/main?q='
-    query = 'select symbol from ' + table_name + ' where {where} order by symbol limit {offset}, {limit}'
+    join_tz = (', tz.timezone', f'left outer join {tz_info_table_name} tz on tz.symbol = s.exchange') if with_timezone else ('', '')
+    query = f"""
+        select s.symbol{join_tz[0]}
+          from {symbol_table_name} s
+          {join_tz[1]}
+          where {{where}} 
+          order by s.symbol 
+          limit {{offset}}, {{limit}}
+    """
     if where is None: where = "1=1"
     offset = page_size * nr_jobs
 
@@ -29,7 +39,7 @@ def fetch_symbols(database, table_name, where=None, max_retries=4, nr_jobs=4, pa
 
         for r in results:
             for s in r:
-                existing_symbols.append(s['symbol'])
+                existing_symbols.append((s['symbol'], s['timezone']) if with_timezone else s['symbol'])
 
         # check if we have a full last batch
         if len(results[-1]) < page_size:
@@ -39,10 +49,14 @@ def fetch_symbols(database, table_name, where=None, max_retries=4, nr_jobs=4, pa
 
 
 def fetch_rows(database, query, offset=0, limit=200, first_or_none=False):
+    if database is None:
+        return None
+
     query += f'limit {offset}, {limit}'
     url = f'https://dolthub.com/api/v1alpha1/{database}/main?q={urllib.parse.quote(query)}'
 
     response = requests.get(url).json()
+    assert response['query_execution_status'] != 'Error', response['query_execution_message']
     rows = response['rows']
     return (rows[0] if len(rows) > 0 else None) if first_or_none else rows
 

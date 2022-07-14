@@ -3,8 +3,8 @@
 set -e
 
 # show the command we intend executing
-commit_args=`echo $DOLT_COMMIT_ARGS`
-echo "merge <$1> into <main>, commit as $commit_args"
+eval "commit_args=($DOLT_COMMIT_ARGS)"
+echo "merge <$1> into <main>, commit as ${commit_args[@]}"
 
 # prepare dolt environment
 echo dolt config
@@ -31,9 +31,9 @@ if [ $? -eq 0 ]; then
 fi
 
 set -e
-echo dolt commit $commit_args
+echo dolt commit "${commit_args[@]}"
 dolt add . || true
-dolt commit $commit_args
+dolt commit "${commit_args[@]}"
 
 echo dolt push main
 dolt push

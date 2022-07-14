@@ -4,8 +4,8 @@ set -e
 
 # show the command we intend executing
 pwd
-commit_args=`echo $DOLT_COMMIT_ARGS`
-echo fin-get $1 $2 $3
+eval "commit_args=($DOLT_COMMIT_ARGS)"
+echo fin-get $1 $2 $3 and commit with "${commit_args[@]}"
 
 # prepare dolt environment
 echo dolt config
@@ -39,9 +39,9 @@ dolt checkout -b "$BRANCH"
 fin-get $1 $2 $3
 
 # commit changes and push data branch
-echo dolt and and commit $commit_args
+echo dolt and and commit "${commit_args[@]}"
 dolt add .
-dolt commit $commit_args
+dolt commit "${commit_args[@]}"
 
 echo dolt push --set-upstream origin "$BRANCH"
 dolt push --set-upstream origin "$BRANCH"

@@ -17,7 +17,7 @@ like the command `python main.py yfinance symbol` can only load data into the ta
 
 ## Development
 ### GitHub Action
-#### Docker Image and GHCR (GitHub Conteiner Registry) for GitHub Actions
+#### Docker Image and GHCR (GitHub Container Registry) for GitHub Actions
 ```bash
 docker build -t finget .
 # provide a developer setting access token with everything granted under packages as password
