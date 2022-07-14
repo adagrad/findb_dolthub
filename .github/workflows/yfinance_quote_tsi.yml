@@ -28,5 +28,6 @@ jobs:
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
     needs: fetch_quotes
+    secrets: inherit
     with:
       branch: ${{ needs.fetch_quotes.outputs.branch }}
