@@ -20,7 +20,7 @@ jobs:
           DATABASE: findb
           DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m pipeline_merge_test --allow-empty"
+          DOLT_COMMIT_ARGS: "-m merge_action --allow-empty"
         with:
           entrypoint: /entrypoint_merge.sh
           command1:  ${{ inputs.branch }}
