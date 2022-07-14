@@ -1,4 +1,4 @@
-name: "Get new NYSE quotes"
+name: "Get new TSI quotes"
 
 on:
   workflow_dispatch:
