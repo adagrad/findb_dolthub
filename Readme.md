@@ -3,6 +3,7 @@
 ```bash
 docker build -t finget .
 docker run --env-file .env -v`pwd`:/data -w /data -it finget <command> <args>
+# i.e docker run --env-file .env -v /tmp/foo/:/data -w /data -it finget yfinance symbol "--time 300 --dolt-load"
 # i.e docker run --env-file .env -v /tmp/foo/:/data -w /data -it finget yfinance quote "-w exchange='NYQ' --time 300 --dolt-load"
 # i.e docker run --env-file .env -v /tmp/foo/:/data -w /data -it --entrypoint /entrypoint_merge.sh finget "yfinance/quote/ffcab0f2b210e9c135ee"
 ```
