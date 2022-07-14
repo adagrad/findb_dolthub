@@ -3,6 +3,13 @@ name: "Get new TSI quotes"
 on:
   workflow_dispatch:
 
+env:
+  REPO: adagrad
+  DATABASE: findb
+  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+  DOLT_COMMIT_ARGS: "-m add_quotes --allow-empty"
+
 jobs:
   fetch_quotes:
     runs-on: ubuntu-latest
@@ -13,12 +20,6 @@ jobs:
       - name: lookup new symbols
         id: quotes
         uses: adagrad/findb_dolthub@v1
-        env:
-          REPO: adagrad
-          DATABASE: findb
-          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
-          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m add_quotes --allow-empty"
         with:
           command1: yfinance
           command2: quote
