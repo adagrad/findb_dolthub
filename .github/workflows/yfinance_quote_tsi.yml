@@ -18,7 +18,7 @@ jobs:
           DATABASE: findb
           DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
           DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m add_quotes"
+          DOLT_COMMIT_ARGS: "-m add_quotes --allow-empty"
         with:
           command1: yfinance
           command2: quote
