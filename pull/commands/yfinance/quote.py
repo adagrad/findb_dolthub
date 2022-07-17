@@ -44,6 +44,7 @@ def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_
     assert (where is not None and repo_database is not None) or symbols is not None, \
         "Either a query (and database repository) or a symbols file has to be provided"
 
+    print(f"select symbols where {where}")
     symbols = _select_tickers(repo_database, where, symbols)
 
     # create a thread pool and wait until all jobs completed
@@ -68,11 +69,11 @@ def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_
             executor.shutdown(wait=False, cancel_futures=True)
 
 
-def _select_tickers(database, where, symbols_file):
+def _select_tickers(database, where, symbols_file, nr_jobs=5):
     if symbols_file is not None:
         return [s.strip().upper() for s in open(symbols_file).readlines() if len(s.strip()) > 0]
 
-    fetched_symbols = fetch_symbols(database, where, with_timezone=True)
+    fetched_symbols = fetch_symbols(database, where, with_timezone=True, nr_jobs=nr_jobs)
     print(f"fetched {len(fetched_symbols)} symbols from database")
     return fetched_symbols
 

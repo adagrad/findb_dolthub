@@ -14,7 +14,7 @@ symbol_table_name = 'yfinance_symbol'
 tz_info_table_name = 'tzinfo_exchange'
 
 
-def fetch_symbols(database, where=None, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999, with_timezone=False):
+def fetch_symbols(database, where=None, max_retries=4, nr_jobs=5, page_size=200, max_batches=999999, with_timezone=False):
     url = 'https://dolthub.com/api/v1alpha1/' + database +'/main?q='
     join_tz = (', tz.timezone', f'left outer join {tz_info_table_name} tz on tz.symbol = s.exchange') if with_timezone else ('', '')
     query = f"""
@@ -34,7 +34,7 @@ def fetch_symbols(database, where=None, max_retries=4, nr_jobs=4, page_size=200,
     for i in range(max_batches):
         urls = [url + urllib.parse.quote(query.format(where=where, offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
         print("submit batch", i, "of batch size", urls)
-        results = boosted_requests(urls=urls, no_workers=4, max_tries=max_retries, timeout=5, parse_json=True, verbose=False)
+        results = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=60, parse_json=True, verbose=False)
         results = [r['rows'] for r in results]
 
         for r in results:
