@@ -6,10 +6,13 @@ beautifulsoup4
 cachier
 cchardet
 click
+fastparquet
 investpy
 lxml
 pandas
 pyaml_env
+pyarrow
+pymysql
 python-dotenv
 quart
 request-boost

@@ -1,0 +1,9 @@
+server:
+  port: 9876
+
+dolt:
+  repository:
+    path: .
+    start_server:
+    #  - dolt
+    #  - sql-server
