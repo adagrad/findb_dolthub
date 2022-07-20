@@ -1,5 +1,66 @@
+# Financial Research Data Base (Dolthub Version)
 
-### run docker container
+
+The purpose of this database is to __enable research__. 
+
+There is not much free available financial to support a research driven project. On the other hand a lot of APIs exist 
+to obtain information of any individual asset. What is clearly missing is a broader access to the data in contrast to 
+very specific API calls. To perform a research task the tool of choice usually is SQL. However, since a lot of 
+researchers will use python, pandas and jupyterlab there is also an API server which directly streams pandas 
+DataFrames as simple as this: 
+
+```python
+import pandas as pd
+pd.read_parquet("http://127.0.0.1:9876/api/ohlcv/yfinance/MSFT,AAPL?__axis=0&__as=parquet")
+```
+
+FinDB should enable individuals todo research without having to build their own individual database. Because this is not 
+only tedious but also hits the same servers unnecessarily often for the same data. Save the planet! This is an attempt 
+to introduce an open and crowed maintained database which can be used to do research across different assets classes, 
+countries and sectors. In case you miss some specific data please consider contributing to this project. Make sure every
+contribution includes a GitHub action as well to keep the data updated (see *Data Lifecycle and Frequency*).
+
+Now, if you really only need the go ahead and just clone the dolt database form the url:  
+https://www.dolthub.com/repositories/adagrad/findb
+
+If you also want to use the API, the simplest would be to just use the [docker container](https://github.com/adagrad/findb_dolthub/pkgs/container/finget)
+
+## Project State
+The project is pre-alpha and any PR's are very welcome. Currently you will be able to find a pretty big collection 
+of tickers of exchange traded asses. Along with these ticker symbols goes along a collection of end of day open, high,
+low, close data. 
+
+
+## Data Lifecycle and Frequency
+
+The purpose of this database is explicitly not to provide most recent up-to-date information. The idea is to support 
+various data sources and keep them updated. Open source, for free for ever, no limitations! While the requirement is not
+to be as up-to-date as possible but still closely enough up to date to train statistical models or perform some 
+advanced machine learning.
+
+Adding a new data source means you also have to add a GitHub action to keep the data updated while not abusing the task
+executors! This way the database will be growing on a regular basis just with a rather low frequency like every month.  
+
+
+## Contribution
+Help with extending data sources and/or with maintening existing sources and jobs is highly appreciated!
+Contribute like you do with any other GitHub project by forking, and the submission of pull requests. Just make sure 
+you follow the pattern. 
+
+## Credits
+Inspired by [JerBouma/FinanceDatabase](https://github.com/JerBouma/FinanceDatabase/) but using GitHub actions to keep
+data updated and use an SQL compliant database. No api client needed, just do SQL. 
+
+A customized version of [Benny-/Yahoo-ticker-symbol-downloader](https://github.com/Benny-/Yahoo-ticker-symbol-downloader) 
+is used to get the list of "all" symbols. [ranaroussi/yfinance](https://github.com/ranaroussi/yfinance) is used for the
+sector and industry information. And a lot of custom and direct _requests_ calls.
+
+## Fetch Data Locally
+
+While as already pointed out it is not recommended to hit the servers of various sources more often as actually needed (
+hence use the already existing data). Here are some commandas to execute and test the commands locally.
+
+### Run docker container with commands
 ```bash
 docker build -t finget .
 docker run --env-file .env -v`pwd`:/data -w /data -it finget <command> <args>
@@ -10,14 +71,20 @@ docker run --env-file .env -v`pwd`:/data -w /data -it finget <command> <args>
 
 ### Integration to dolthub
 
-dolthub is ... 
-you can get deltas of the data as easy as `dolt pull`
+The idea is to fetch as less data as possible over wire and just pull/push the deltas. This is excatly what git does 
+and dolthub wants to bring this paradigm to data as well. The project is still very early but the idea behind it is 
+realy promissing and should be supported! Updating your local database is as easy as `git pull` which just becomes 
+`dolt pull`.
 
+
+## Development
+
+### Adding Data
+todo docuemnt adding data
 Every table needs to match the plugin command names
 like the command `python main.py yfinance symbol` can only load data into the table `yfinance_symbol`
 
-## Development
-### GitHub Action
+### Add GitHub Action
 #### Docker Image and GHCR (GitHub Container Registry) for GitHub Actions
 ```bash
 docker build -t finget .
