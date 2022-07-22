@@ -1,4 +1,10 @@
+import os
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from time import sleep
 from unittest import TestCase
+
+import pandas as pd
 
 from modules.dolt_api import fetch_symbols, fetch_rows, execute_shell
 
@@ -44,3 +50,24 @@ class TestDoltApi(TestCase):
     def test_run_shell_command(self):
         rc, out, err = execute_shell("dolt", "table", "import", "-u", "lala", "foo.csv")
         self.assertTrue('The current directory is not a valid dolt repository' in err)
+        self.assertNotEqual(rc, 0)
+
+    def test_shell_threadlock(self):
+        file = "test_shell_threadlock.txt"
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = \
+                [executor.submit(
+                    partial(
+                        execute_shell,
+                        "bash", "-c", f'echo {i} >> {file}'
+                    )
+                ) for i in range(10)]
+
+        executor.shutdown(wait=True)
+        rc = sum([f.result()[0] for f in futures])
+        lines = open(file).readlines()
+        try:
+            self.assertEqual(rc, 0)
+            self.assertListEqual(lines, ['0\n', '1\n', '2\n', '3\n', '4\n', '5\n', '6\n', '7\n', '8\n', '9\n'])
+        finally:
+            os.unlink(file)

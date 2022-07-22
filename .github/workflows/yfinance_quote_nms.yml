@@ -1,17 +1,17 @@
-name: "Get new PNK quotes"
+name: "Get new NMS quotes"
 
 on:
   workflow_dispatch:
   schedule:
     # run once a week
-    - cron: "0 6 * * 3"
+    - cron: "0 1 * * 4"
 
 env:
   REPO: adagrad
   DATABASE: findb
   DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
   DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-  DOLT_COMMIT_ARGS: "-m add_quotes_pnk --allow-empty"
+  DOLT_COMMIT_ARGS: "-m add_quotes_nms --allow-empty"
 
 jobs:
   fetch_quotes:
@@ -26,7 +26,7 @@ jobs:
         with:
           command1: yfinance
           command2: quote
-          command_args: "-w exchange='PNK' --time 300 --dolt-load"
+          command_args: "-w exchange='NMS' --time 300 --dolt-load"
 
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main

@@ -41,3 +41,12 @@ class TestQuote(TestCase):
                 os.system("ls -l")
 
             print(output.getvalue())
+
+    def test_debugging(self):
+        print(_fetch_last_date("adagrad/findb", "AAAWX", None, verbose=True))
+        """
+        ./AAMBFX.csv
+            Warning: There are fewer columns in the import file's schema than the table's schema.
+                If unintentional, check for any typos in the import file's header.
+                Rows Processed: 0, Additions: 0, Modifications: 0, Had No Effect: 0
+        """

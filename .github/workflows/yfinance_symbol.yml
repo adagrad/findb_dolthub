@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
   schedule:
     # run once a week
-    - cron: "0 1 * * 3"
+    - cron: "0 12 * * 3"
 
 env:
   REPO: adagrad
   DATABASE: findb
   DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
   DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-  DOLT_COMMIT_ARGS: "-m add_quotes --allow-empty"
+  DOLT_COMMIT_ARGS: "-m add_new_symbols --allow-empty"
 
 jobs:
   search_symbols:

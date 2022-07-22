@@ -63,17 +63,17 @@ def fetch_rows(database, query, offset=0, limit=200, first_or_none=False):
 
 def dolt_load_file(table_name, csv_file) -> Tuple[int, str, str]:
     if os.path.exists(csv_file):
-        threadlock.acquire()
-        try:
-            # rc = os.system(f"bash -c 'dolt table import -u {table_name} {csv_file}'")
-            return execute_shell("dolt", "table", "import", "-u", table_name, csv_file)
-        finally:
-            threadlock.release()
+        # rc = os.system(f"bash -c 'dolt table import -u {table_name} {csv_file}'")
+        return execute_shell("dolt", "table", "import", "-u", table_name, csv_file)
     else:
         return 1, "", "File Not Found"
 
 
-def execute_shell(command, *args):
-    result = subprocess.run([command, *args], capture_output=True, text=True)
-    print(command, *args, '\n\t .. ', result.returncode, result.stdout, result.stderr)
-    return result.returncode, result.stdout, result.stderr
+def execute_shell(command, *args, **kwargs):
+    threadlock.acquire()
+    try:
+        result = subprocess.run([command, *args], capture_output=True, text=True, **kwargs)
+        print(command, *args, '\n\t .. ', result.returncode, result.stdout, result.stderr)
+        return result.returncode, result.stdout, result.stderr
+    finally:
+        threadlock.release()

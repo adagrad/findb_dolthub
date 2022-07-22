@@ -12,7 +12,7 @@ RUN curl -L https://github.com/dolthub/dolt/releases/latest/download/install.sh 
 COPY entrypoint.sh /entrypoint.sh
 COPY entrypoint_merge.sh /entrypoint_merge.sh
 COPY torrc.default /etc/tor/torrc.default
-ADD pull /opt/
+ADD app /opt/
 
 EXPOSE 9050
 EXPOSE 9051

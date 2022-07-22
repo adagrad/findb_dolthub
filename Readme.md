@@ -26,7 +26,7 @@ https://www.dolthub.com/repositories/adagrad/findb
 If you also want to use the API, the simplest would be to just use the [docker container](https://github.com/adagrad/findb_dolthub/pkgs/container/finget)
 
 ## Project State
-The project is pre-alpha and any PR's are very welcome. Currently you will be able to find a pretty big collection 
+The project is pre-alpha and any PRs are very welcome. Currently, you will be able to find a pretty big collection 
 of tickers of exchange traded asses. Along with these ticker symbols goes along a collection of end of day open, high,
 low, close data. 
 
@@ -34,7 +34,7 @@ low, close data.
 ## Data Lifecycle and Frequency
 
 The purpose of this database is explicitly not to provide most recent up-to-date information. The idea is to support 
-various data sources and keep them updated. Open source, for free for ever, no limitations! While the requirement is not
+various data sources and keep them updated. Open source, for free forever, no limitations! While the requirement is not
 to be as up-to-date as possible but still closely enough up to date to train statistical models or perform some 
 advanced machine learning.
 
@@ -43,7 +43,7 @@ executors! This way the database will be growing on a regular basis just with a 
 
 
 ## Contribution
-Help with extending data sources and/or with maintening existing sources and jobs is highly appreciated!
+Help with extending data sources and/or with maintaining existing sources and jobs is highly appreciated!
 Contribute like you do with any other GitHub project by forking, and the submission of pull requests. Just make sure 
 you follow the pattern. 
 
@@ -58,7 +58,7 @@ sector and industry information. And a lot of custom and direct _requests_ calls
 ## Fetch Data Locally
 
 While as already pointed out it is not recommended to hit the servers of various sources more often as actually needed (
-hence use the already existing data). Here are some commandas to execute and test the commands locally.
+hence use the already existing data). Here are some commands to execute and test the commands locally.
 
 ### Run docker container with commands
 ```bash
@@ -71,16 +71,16 @@ docker run --env-file .env -v`pwd`:/data -w /data -it finget <command> <args>
 
 ### Integration to dolthub
 
-The idea is to fetch as less data as possible over wire and just pull/push the deltas. This is excatly what git does 
+The idea is to fetch as few data as possible over wire and just pull/push the deltas. This is exactly what git does 
 and dolthub wants to bring this paradigm to data as well. The project is still very early but the idea behind it is 
-realy promissing and should be supported! Updating your local database is as easy as `git pull` which just becomes 
+really promising and should be supported! Updating your local database is as easy as `git pull` which just becomes 
 `dolt pull`.
 
 
 ## Development
 
 ### Adding Data
-todo docuemnt adding data
+todo document adding data
 Every table needs to match the plugin command names
 like the command `python main.py yfinance symbol` can only load data into the table `yfinance_symbol`
 

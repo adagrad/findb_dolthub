@@ -3,23 +3,16 @@ import json
 import mimetypes
 import os.path
 import subprocess
-import urllib.parse
-from os import path
+import sys
 from time import sleep
 
-from dotenv import load_dotenv
-from pyaml_env import parse_config
-from quart import Quart, request, make_response, stream_with_context
+import click
+from quart import Quart, request
 
-# load environment
-from serve.utuls.request_util import get_data_args
+from serve.config import Config
 from serve.dataaccess.ohlcv import fetch_ohlcv
 from serve.datastream.pandas_response import make_pandas_response
-
-PATH = path.abspath(path.dirname(__file__))
-load_dotenv() # local
-load_dotenv('/etc/app/config/.env') # when deployed to kubernetes
-config = parse_config(path.join(PATH, 'conf.yml'))
+from serve.utils.request_util import get_data_args
 
 # create app
 app = Quart(__name__)
@@ -81,8 +74,15 @@ async def ping():
     return async_generator(), 200, {'Content-Type': mimetypes.guess_type(f'test.json')[0]}
 
 
-# start server
-if __name__ == "__main__":
+@click.command()
+@click.option('-e', '--env-file', type=str, default=None, help='Config file')
+@click.option('-c', '--config-file', type=str, default=None, help='Config file')
+def cli(env_file, config_file):
+    # overwrite configuration
+    if env_file is not None: Config.env_path = env_file
+    if config_file is not None: Config.conf_path = config_file
+
+    config = Config.get()
     print("starting api using", config)
     dolt_server_process = None
 
@@ -101,3 +101,8 @@ if __name__ == "__main__":
     finally:
         if dolt_server_process is not None: dolt_server_process.kill()
         app.shutdown()
+
+
+# start server
+if __name__ == "__main__":
+    cli()
