@@ -34,3 +34,4 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ needs.fetch_quotes.outputs.branch }}
+      commit_message: add_quotes_enx
