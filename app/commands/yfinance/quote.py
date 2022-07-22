@@ -135,16 +135,16 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
             log.info(f"save csv for {symbol} containing {len(df)} rows to {csv_file}")
             df.to_csv(csv_file, index=False)
 
-        # add another csv file to load containing symbol, min_epoch, max_epoch, delisted
-        pd.DataFrame(
-            [{
-                "symbol": symbol,
-                "min_epoch": float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min(),
-                "max_epoch": df["epoch"].max(),
-                "delisted": int(delisted),
-                "tz_info": str(tz_info)
-            }]
-        ).to_csv(csv_file + ".meta.csv", index=False)
+            # add another csv file to load containing symbol, min_epoch, max_epoch, delisted
+            pd.DataFrame(
+                [{
+                    "symbol": symbol,
+                    "min_epoch": float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min(),
+                    "max_epoch": df["epoch"].max(),
+                    "delisted": int(delisted),
+                    "tz_info": str(tz_info)
+                }]
+            ).to_csv(csv_file + ".meta.csv", index=False)
 
         # load csv into dolt branch
         if dolt_load:
