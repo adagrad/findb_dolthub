@@ -20,10 +20,12 @@ to introduce an open and crowed maintained database which can be used to do rese
 countries and sectors. In case you miss some specific data please consider contributing to this project. Make sure every
 contribution includes a GitHub action as well to keep the data updated (see *Data Lifecycle and Frequency*).
 
-Now, if you really only need the go ahead and just clone the dolt database form the url:  
-https://www.dolthub.com/repositories/adagrad/findb
+Now, if you really only need the go ahead and just [install dolt](https://docs.dolthub.com/introduction/installation)
+and clone the dolt database form the url: 
+[dolt clone adagrad/findb](https://www.dolthub.com/repositories/adagrad/findb).
 
-If you also want to use the API, the simplest would be to just use the [docker container](https://github.com/adagrad/findb_dolthub/pkgs/container/finget)
+If you also want to use the API, the simplest would be to just use the hosted 
+[docker image](https://github.com/adagrad/findb_dolthub/pkgs/container/finget) on github.
 
 ## Project State
 The project is pre-alpha and any PRs are very welcome. Currently, you will be able to find a pretty big collection 
