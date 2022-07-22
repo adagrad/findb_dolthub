@@ -1,5 +1,9 @@
+import logging
+
 import requests
 import requests_random_user_agent
+
+log = logging.getLogger(__name__)
 
 
 class RequestsSession(object):
@@ -15,7 +19,7 @@ class RequestsSession(object):
         requests_random_user_agent_version = requests_random_user_agent.__version__
 
     def reset_session(self):
-        print("reset requests session, using tor =", self.tor_socks_port is not None)
+        log.info(f"reset requests session, using tor = {self.tor_socks_port is not None}")
         self.rsession = requests.Session() if self.tor_socks_port is None else self._get_tor_session()
         if self.start_url is not None:
             self.rsession.get(self.start_url)
@@ -29,7 +33,7 @@ class RequestsSession(object):
 
         # also get a new exit IP if control port is enabled
         if self.tor_control_port is not None:
-            print("  .. ask for new exit ip")
+            log.info("  .. ask for new exit ip")
             from stem import Signal
             from stem.control import Controller
 

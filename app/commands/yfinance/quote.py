@@ -6,7 +6,6 @@ import io
 import os
 import sys
 import threading
-import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
@@ -19,7 +18,6 @@ import yfinance as yf
 
 from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
 from modules.log import get_logger
-
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -63,7 +61,7 @@ def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_
                     dolt_load=dolt_load,
                     path=output_dir,
                     max_runtime=max_runtime,
-                    clean=clean
+                    clean=clean,
                 )
             ) for symbol in symbols]
 
@@ -87,7 +85,7 @@ def _select_tickers(database, where, symbols_file, nr_jobs=5):
 
 
 def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, clean=False):
-    log = get_logger(f'{threading.get_native_id()}.quotes.log')
+    log = get_logger(f'{threading.current_thread().name}.quotes.log')
 
     if max_runtime is not None and datetime.datetime.now() >= max_runtime:
         log.info("max time reached exit before fetching", symbol)
