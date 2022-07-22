@@ -97,23 +97,19 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
         else:
             tz_info = pytz.timezone('US/Eastern')
 
-        ticker = yf.Ticker(symbol)
         first_price_date, last_price_date = _fetch_last_date(database, symbol, tz_info)
         delisted = False
 
         # fetch data, and overwrite the last couple of days in case of error corrections
-        with io.StringIO() as output:
-            with contextlib.redirect_stdout(output):
-                if last_price_date is None:
-                    log.info(f"{symbol}: no last price date available, fetch max history")
-                    df = ticker.history(period='max')
-                else:
-                    log.info(f"{symbol}: fetch for new prices from {last_price_date}")
-                    df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
 
-            if "No data found, symbol may be delisted" in output.getvalue() or len(df) <= 0:
-                log.info(f"{symbol} no data found, might be delisted")
-                delisted = True
+        if last_price_date is None:
+            log.info(f"{symbol}: no last price date available, fetch max history")
+            #df = ticker.history(period='max')
+            df = yf.download([symbol], progress=False, show_errors=False)
+        else:
+            log.info(f"{symbol}: fetch for new prices from {last_price_date}")
+            #df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
+            df = yf.download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
 
         if len(df) > 0:
             # insert timezone from exchange
@@ -135,16 +131,24 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
             log.info(f"save csv for {symbol} containing {len(df)} rows to {csv_file}")
             df.to_csv(csv_file, index=False)
 
-            # add another csv file to load containing symbol, min_epoch, max_epoch, delisted
-            pd.DataFrame(
-                [{
-                    "symbol": symbol,
-                    "min_epoch": float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min(),
-                    "max_epoch": df["epoch"].max(),
-                    "delisted": int(delisted),
-                    "tz_info": str(tz_info)
-                }]
-            ).to_csv(csv_file + ".meta.csv", index=False)
+            min_epoch = float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min()
+            max_epoch = df["epoch"].max()
+        else:
+            log.info(f"{symbol} no data found, might be delisted")
+            delisted = True
+            min_epoch = None
+            max_epoch = None
+
+        # add another csv file to load containing symbol, min_epoch, max_epoch, delisted
+        pd.DataFrame(
+            [{
+                "symbol": symbol,
+                "min_epoch": min_epoch,
+                "max_epoch": max_epoch,
+                "delisted": int(delisted),
+                "tz_info": str(tz_info)
+            }]
+        ).to_csv(csv_file + ".meta.csv", index=False)
 
         # load csv into dolt branch
         if dolt_load:
