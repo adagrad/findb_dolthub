@@ -5,6 +5,13 @@ on:
   registry_package:
     types: [ published, updated ]
 
+env:
+  REPO: adagrad
+  DATABASE: findb
+  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+  DOLT_COMMIT_ARGS: "-m pipeline_test --allow-empty"
+
 jobs:
   development_job:
     runs-on: ubuntu-latest
@@ -15,12 +22,6 @@ jobs:
       - name: list commands
         id: test
         uses: adagrad/findb_dolthub@main
-        env:
-          REPO: adagrad
-          DATABASE: findb
-          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
-          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-          DOLT_COMMIT_ARGS: "-m pipeline_test --allow-empty"
         with:
           command1: yfinance
           command2: symbol
@@ -28,5 +29,7 @@ jobs:
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
     needs: development_job
+    secrets: inherit
     with:
       branch: ${{ needs.development_job.outputs.branch }}
+      commit_message: ${{ env.DOLT_COMMIT_ARGS }}

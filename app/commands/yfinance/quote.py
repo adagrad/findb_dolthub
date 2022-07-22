@@ -172,7 +172,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
                 except Exception as ignore:
                     log.info("error unlinking file: " + csv_file, ignore)
     except Exception as e:
-        log.error("ERROR for symbol:" + symbol, e, exc_info=1)
+        log.error(f"ERROR for symbol: {symbol}, {e}", exc_info=1)
         raise e
 
 

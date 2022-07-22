@@ -7,6 +7,10 @@ on:
         description: 'the name of the feature branch to merge into main'
         required: true
         type: string
+      commit_message:
+        description: 'message for the merge commit'
+        required: true
+        type: string
 
 jobs:
   simulate_pr_merge:
@@ -15,13 +19,12 @@ jobs:
     steps:
       - name: clone merge push
         uses: adagrad/findb_dolthub@main
-        #inherit env from parent
-        #env:
-        #  REPO: adagrad
-        #  DATABASE: findb
-        #  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
-        #  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-        #  DOLT_COMMIT_ARGS: "-m merge_action --allow-empty"
+        env:
+          REPO: adagrad
+          DATABASE: findb
+          DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+          DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+          DOLT_COMMIT_ARGS: "-m ${{ inputs.commit_message }} --allow-empty"
         with:
           entrypoint: /entrypoint_merge.sh
           command1:  ${{ inputs.branch }}
