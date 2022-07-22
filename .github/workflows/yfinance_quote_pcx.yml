@@ -26,7 +26,7 @@ jobs:
         with:
           command1: yfinance
           command2: quote
-          command_args: "-w exchange='PCX' --time 300 --dolt-load"
+          command_args: "-w exchange='PCX' --time 300 --dolt-load --clean"
 
   simulate_pr_merge:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
