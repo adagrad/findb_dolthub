@@ -32,4 +32,4 @@ jobs:
     secrets: inherit
     with:
       branch: ${{ needs.development_job.outputs.branch }}
-      commit_message: ${{ env.DOLT_COMMIT_ARGS }}
+      commit_message: pipeline_test
