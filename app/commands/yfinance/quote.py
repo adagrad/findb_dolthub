@@ -105,13 +105,14 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
         with io.StringIO() as output:
             with contextlib.redirect_stdout(output):
                 if last_price_date is None:
-                    log.info("no last price date available, fetch max history")
+                    log.info(f"{symbol}: no last price date available, fetch max history")
                     df = ticker.history(period='max')
                 else:
-                    log.info(f"fetch for new prices from {last_price_date}")
+                    log.info(f"{symbol}: fetch for new prices from {last_price_date}")
                     df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
 
             if "No data found, symbol may be delisted" in output.getvalue() or len(df) <= 0:
+                log.info(f"{symbol} no data found, might be delisted")
                 delisted = True
 
         if len(df) > 0:
