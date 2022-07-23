@@ -9,7 +9,8 @@ from functools import partial
 import click
 import pandas as pd
 import pytz
-from yfinance import download
+from yfinance import download, Ticker
+from yfinance.utils import auto_adjust
 
 from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
 from modules.log import get_logger
@@ -94,16 +95,31 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
         try:
             if last_price_date is None:
                 log.info(f"{symbol}: no last price date available, fetch max history")
-                df = download([symbol], progress=False, show_errors=False)
+                #df = download([symbol], progress=False, show_errors=False)
+                df = Ticker(symbol).history(period='max')
             else:
                 # fetch data, and overwrite the last couple of days in case of error corrections
                 log.info(f"{symbol}: fetch for new prices from {last_price_date}")
-                df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
+                # df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
+                df = Ticker(symbol).history(start=(last_price_date - timedelta(days=5)).date())
         except KeyError as ke:
             log.warn(f"dataframe does not have key {ke} {symbol}")
             df = pd.DataFrame({})
 
         if len(df) > 0:
+            # fix hick ups
+            if "Adj. Close" in df.columns:
+                log.warn("Auto Adjustment failed for some reason")
+                df = auto_adjust(df)
+
+            if "Dividends" not in df.columns:
+                log.warn("Add missing column Dividends")
+                df["Dividends"] = None
+
+            if "Stock Splits" not in df.columns:
+                log.warn("Add missing column Stock Splits")
+                df["Stock Splits"] = None
+
             # insert timezone from exchange
             df.insert(0, "tzinfo", str(tz_info))
 
