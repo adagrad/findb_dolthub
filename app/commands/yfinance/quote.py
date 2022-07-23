@@ -22,7 +22,7 @@ from modules.log import get_logger
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
-
+log = get_logger(f'{threading.current_thread().name}.quotes.log')
 
 quote_meta_table_name = 'yfinance_quote_meta'
 quote_tz_table_name = 'tzinfo_exchange'
@@ -85,8 +85,6 @@ def _select_tickers(database, where, symbols_file, nr_jobs=5):
 
 
 def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, clean=False):
-    log = get_logger(f'{threading.current_thread().name}.quotes.log')
-
     if max_runtime is not None and datetime.datetime.now() >= max_runtime:
         log.info("max time reached exit before fetching", symbol)
         return
@@ -97,18 +95,17 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
         else:
             tz_info = pytz.timezone('US/Eastern')
 
-        first_price_date, last_price_date = _fetch_last_date(database, symbol, tz_info)
-        delisted = False
-
-        # fetch data, and overwrite the last couple of days in case of error corrections
+        first_price_date, last_price_date, delisted = _fetch_last_date(database, symbol, tz_info)
+        if delisted:
+            log.warn(f"{symbol} is marked as delisted, skipping!")
+            return  # TODO later allow action on delisted items
 
         if last_price_date is None:
             log.info(f"{symbol}: no last price date available, fetch max history")
-            #df = ticker.history(period='max')
             df = yf.download([symbol], progress=False, show_errors=False)
         else:
+            # fetch data, and overwrite the last couple of days in case of error corrections
             log.info(f"{symbol}: fetch for new prices from {last_price_date}")
-            #df = ticker.history(start=(last_price_date - timedelta(days=5)).date())
             df = yf.download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
 
         if len(df) > 0:
@@ -183,22 +180,26 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
 def _fetch_last_date(database, symbol, tz_info, verbose=False):
     # check if price data is already available in database and what the latest date is
     query = f""" 
-        select min(q.epoch) as min_epoch, max(q.epoch) as max_epoch
+        select min(q.epoch) as min_epoch, max(q.epoch) as max_epoch, coalesce(qm.delisted, 0) as delisted
           from {quote_table_name} q
           left outer join {quote_meta_table_name} qm on qm.symbol = q.symbol 
          where q.symbol='{symbol}'
-           and (qm.delisted = 0 or qm.delisted is null)
     """
-    res = fetch_rows(database, query, first_or_none=True)
 
-    if verbose:
-        print(query, '\n', res)
+    if verbose: log.info(query)
 
-    has_valid_epoch = res is not None and "max_epoch" in res and res["max_epoch"] is not None
-    first_price_date = datetime.datetime.fromtimestamp(float(res["min_epoch"]), tz=tz_info) if has_valid_epoch else None
-    last_price_date = datetime.datetime.fromtimestamp(float(res["max_epoch"]), tz=tz_info) if has_valid_epoch else None
-    return first_price_date, last_price_date
+    try:
+        res = fetch_rows(database, query, first_or_none=True)
+        if verbose: log.info(res)
 
+        has_valid_epoch = res is not None and "max_epoch" in res and res["max_epoch"] is not None
+        first_price_date = datetime.datetime.fromtimestamp(float(res["min_epoch"]), tz=tz_info) if has_valid_epoch else None
+        last_price_date = datetime.datetime.fromtimestamp(float(res["max_epoch"]), tz=tz_info) if has_valid_epoch else None
+        delisted = res['delisted'] if has_valid_epoch else 0
+        return first_price_date, last_price_date, delisted
+    except Exception as e:
+        log.warn(f"{symbol}: last min/max epoch query failed, load full history: {e}")
+        return None, None, 0
 
 if __name__ == '__main__':
     cli()
