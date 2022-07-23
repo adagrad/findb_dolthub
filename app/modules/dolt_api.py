@@ -1,11 +1,11 @@
-import contextlib
-import io
+import logging
 import os
 import subprocess
 import urllib.parse
 from threading import Lock
 from typing import Tuple
-import logging
+
+import pandas as pd
 import requests
 from request_boost import boosted_requests
 
@@ -16,43 +16,34 @@ log = logging.getLogger(__name__)
 
 
 def fetch_symbols(database, where=None, max_retries=4, nr_jobs=5, page_size=200, max_batches=999999, with_timezone=False):
-    url = 'https://dolthub.com/api/v1alpha1/' + database +'/main?q='
     join_tz = (', tz.timezone', f'left outer join {tz_info_table_name} tz on tz.symbol = s.exchange') if with_timezone else ('', '')
+    if where is None: where = "1=1"
+
     query = f"""
         select s.symbol{join_tz[0]}
           from {symbol_table_name} s
           {join_tz[1]}
-          where {{where}} 
+          where {where} 
           order by s.symbol 
           limit {{offset}}, {{limit}}
     """
-    if where is None: where = "1=1"
-    offset = page_size * nr_jobs
 
-    pages = [(x * page_size, x * page_size + page_size) for x in range(nr_jobs)]
     existing_symbols = []
+    results = execute_query(database, query, max_batches, nr_jobs, page_size, max_retries)
 
-    for i in range(max_batches):
-        urls = [url + urllib.parse.quote(query.format(where=where, offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
-        log.info(f"submit batch {i} of batch size {page_size} {urls}")
-        results = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=60, parse_json=True, verbose=False)
-        results = [r['rows'] for r in results]
-
-        for r in results:
-            for s in r:
-                existing_symbols.append((s['symbol'], s['timezone']) if with_timezone else s['symbol'])
-
-        # check if we have a full last batch
-        if len(results[-1]) < page_size:
-            break
+    for _, r in results.iterrows():
+        for s in r:
+            existing_symbols.append((s['symbol'], s['timezone']) if with_timezone else s['symbol'])
 
     return existing_symbols
 
 
-def fetch_rows(database, query, offset=0, limit=200, first_or_none=False):
+def fetch_rows(database, query, offset_limit=(0, 200), first_or_none=False):
     if database is None:
         return None
 
+    # FIXME use execute_query
+    offset, limit = offset_limit
     query += f'limit {offset}, {limit}'
     url = f'https://dolthub.com/api/v1alpha1/{database}/main?q={urllib.parse.quote(query)}'
 
@@ -61,6 +52,34 @@ def fetch_rows(database, query, offset=0, limit=200, first_or_none=False):
     rows = response['rows']
     return (rows[0] if len(rows) > 0 else None) if first_or_none else rows
 
+
+def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200, max_retries=4, **kwargs):
+    if database.startswith('mysql+pymysql://'):
+        log.info(f"use local server {database} instead of http requests")
+        return pd.read_sql(query, database)
+    else:
+        url = 'https://dolthub.com/api/v1alpha1/' + database + '/main?q='
+        log.info(f"use the dolthub hosted database over the rest api: {url}")
+        offset = page_size * nr_jobs
+        pages = [(x * page_size, x * page_size + page_size) for x in range(nr_jobs)]
+        results = pd.DataFrame({})
+
+        for i in range(max_batches):
+            urls = [url + urllib.parse.quote(query.format(**kwargs, offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
+            log.info(f"submit batch {i} of batch size {page_size} {urls}")
+            results = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=60, parse_json=True, verbose=False)
+            results = [r['rows'] for r in results if 'rows' in r and len(r['rows']) > 0]
+
+            # check if we have a full last batch
+            if len(results[-1]) < page_size:
+                break
+
+        return pd.DataFrame(results)
+
+
+#
+# DOLT Bash API
+#
 
 def dolt_load_file(table_name, csv_file) -> Tuple[int, str, str]:
     if os.path.exists(csv_file):

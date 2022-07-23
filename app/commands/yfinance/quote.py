@@ -1,23 +1,19 @@
-import concurrent
-import contextlib
 import datetime
 import inspect
-import io
 import os
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from functools import partial
-from time import sleep
 
 import click
 import pandas as pd
 import pytz
-import yfinance as yf
+from yfinance import download
 
 from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
 from modules.log import get_logger
+from modules.threaded import execute_parallel
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -50,29 +46,19 @@ def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_
     print(f"select symbols where {where}")
     symbols = _select_tickers(repo_database, where, symbols)
 
-    # create a thread pool and wait until all jobs completed
-    with ThreadPoolExecutor(max_workers=parallel_threads) as executor:
-        futures = \
-            [executor.submit(
-                partial(
-                    _fetch_data,
-                    database=repo_database,
-                    symbol=symbol,
-                    dolt_load=dolt_load,
-                    path=output_dir,
-                    max_runtime=max_runtime,
-                    clean=clean,
-                )
-            ) for symbol in symbols]
-
-        try:
-            while not all([future.done() for future in futures]):
-                sleep(0.2)
-        except KeyboardInterrupt:
-            print("SIGTERM non gracefully stopping thread pool!")
-            executor._threads.clear()
-            concurrent.futures.thread._threads_queues.clear()
-            raise
+    execute_parallel(
+        partial(
+            _fetch_data,
+            database=repo_database,
+            dolt_load=dolt_load,
+            path=output_dir,
+            max_runtime=max_runtime,
+            clean=clean,
+        ),
+        symbols,
+        "symbol",
+        parallel_threads
+    )
 
 
 def _select_tickers(database, where, symbols_file, nr_jobs=5):
@@ -89,12 +75,17 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
         log.info("max time reached exit before fetching", symbol)
         return
 
-    try:
-        if isinstance(symbol, tuple):
-            symbol, tz_info = symbol[0], pytz.timezone(symbol[1])
-        else:
-            tz_info = pytz.timezone('US/Eastern')
+    # split symbol and time zone
+    if isinstance(symbol, tuple):
+        symbol, tz_info = symbol[0], pytz.timezone(symbol[1])
+    else:
+        tz_info = pytz.timezone('US/Eastern')
 
+    # define result file name
+    csv_file = os.path.abspath(os.path.join(path, f"{str(symbol)}.csv"))
+
+    # try to fetch quotes
+    try:
         first_price_date, last_price_date, delisted = _fetch_last_date(database, symbol, tz_info)
         if delisted:
             log.warn(f"{symbol} is marked as delisted, skipping!")
@@ -102,11 +93,11 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
 
         if last_price_date is None:
             log.info(f"{symbol}: no last price date available, fetch max history")
-            df = yf.download([symbol], progress=False, show_errors=False)
+            df = download([symbol], progress=False, show_errors=False)
         else:
             # fetch data, and overwrite the last couple of days in case of error corrections
             log.info(f"{symbol}: fetch for new prices from {last_price_date}")
-            df = yf.download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
+            df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
 
         if len(df) > 0:
             # insert timezone from exchange
@@ -124,7 +115,6 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
             )
 
             # save as csv
-            csv_file = os.path.abspath(os.path.join(path, f"{str(symbol)}.csv"))
             log.info(f"save csv for {symbol} containing {len(df)} rows to {csv_file}")
             df.to_csv(csv_file, index=False)
 
@@ -196,7 +186,7 @@ def _fetch_last_date(database, symbol, tz_info, verbose=False):
         first_price_date = datetime.datetime.fromtimestamp(float(res["min_epoch"]), tz=tz_info) if has_valid_epoch else None
         last_price_date = datetime.datetime.fromtimestamp(float(res["max_epoch"]), tz=tz_info) if has_valid_epoch else None
         delisted = res['delisted'] if has_valid_epoch else 0
-        return first_price_date, last_price_date, delisted
+        return first_price_date, last_price_date, int(delisted)
     except Exception as e:
         log.warn(f"{symbol}: last min/max epoch query failed, load full history: {e}")
         return None, None, 0
