@@ -6,7 +6,6 @@ from threading import Lock
 from typing import Tuple
 
 import pandas as pd
-import requests
 from request_boost import boosted_requests
 
 threadlock = Lock()
@@ -32,25 +31,19 @@ def fetch_symbols(database, where=None, max_retries=4, nr_jobs=5, page_size=200,
     results = execute_query(database, query, max_batches, nr_jobs, page_size, max_retries)
 
     for _, r in results.iterrows():
-        for s in r:
-            existing_symbols.append((s['symbol'], s['timezone']) if with_timezone else s['symbol'])
+        existing_symbols.append((r['symbol'], r['timezone']) if with_timezone else r['symbol'])
 
     return existing_symbols
 
 
-def fetch_rows(database, query, offset_limit=(0, 200), first_or_none=False):
+def fetch_rows(database, query, first_or_none=False):
     if database is None:
         return None
 
-    # FIXME use execute_query
-    offset, limit = offset_limit
-    query += f'limit {offset}, {limit}'
-    url = f'https://dolthub.com/api/v1alpha1/{database}/main?q={urllib.parse.quote(query)}'
+    query += 'limit {offset}, {limit}'
 
-    response = requests.get(url).json()
-    assert response['query_execution_status'] != 'Error', response['query_execution_message']
-    rows = response['rows']
-    return (rows[0] if len(rows) > 0 else None) if first_or_none else rows
+    df = execute_query(database, query)
+    return (df.iloc[0] if len(df) > 0 else None) if first_or_none else df
 
 
 def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200, max_retries=4, **kwargs):
@@ -68,7 +61,9 @@ def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200,
             urls = [url + urllib.parse.quote(query.format(**kwargs, offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
             log.info(f"submit batch {i} of batch size {page_size} {urls}")
             results = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=60, parse_json=True, verbose=False)
-            results = [r['rows'] for r in results if 'rows' in r and len(r['rows']) > 0]
+
+            assert all([r['query_execution_status'] != 'Error' for r in results]), "\n".join([r['query_execution_message'] for r in results])
+            results = [row for r in results if 'rows' in r and len(r['rows']) > 0 for row in r['rows']]
 
             # check if we have a full last batch
             if len(results[-1]) < page_size:

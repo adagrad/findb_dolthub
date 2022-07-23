@@ -1,3 +1,4 @@
+import datetime
 import io
 import os
 import tempfile
@@ -24,7 +25,9 @@ class TestQuote(TestCase):
             self.assertEqual(df["tzinfo"].iloc[0], 'America/New_York')
 
     def test__fetch_last_date(self):
-        self.assertIsNotNone(_fetch_last_date("adagrad/findb", "AAPL", None)[1])
+        res = _fetch_last_date("adagrad/findb", "AAPL", None)
+        self.assertIsNotNone(res)
+        self.assertIsInstance(res[0], datetime.datetime)
 
     def test_symbol_delisted(self):
         "No data found, symbol may be delisted"

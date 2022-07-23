@@ -91,13 +91,17 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
             log.warn(f"{symbol} is marked as delisted, skipping!")
             return  # TODO later allow action on delisted items
 
-        if last_price_date is None:
-            log.info(f"{symbol}: no last price date available, fetch max history")
-            df = download([symbol], progress=False, show_errors=False)
-        else:
-            # fetch data, and overwrite the last couple of days in case of error corrections
-            log.info(f"{symbol}: fetch for new prices from {last_price_date}")
-            df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
+        try:
+            if last_price_date is None:
+                log.info(f"{symbol}: no last price date available, fetch max history")
+                df = download([symbol], progress=False, show_errors=False)
+            else:
+                # fetch data, and overwrite the last couple of days in case of error corrections
+                log.info(f"{symbol}: fetch for new prices from {last_price_date}")
+                df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
+        except KeyError as ke:
+            log.warn(f"dataframe does not have key {ke} {symbol}")
+            df = pd.DataFrame({})
 
         if len(df) > 0:
             # insert timezone from exchange
@@ -138,7 +142,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
         ).to_csv(csv_file + ".meta.csv", index=False)
 
         # load csv into dolt branch
-        if dolt_load:
+        if dolt_load and os.path.exists(csv_file + ".meta.csv"):
             if os.path.exists(csv_file):
                 log.info(f"dolt table import -u {quote_table_name} {csv_file}")
                 rc, out, err = dolt_load_file(quote_table_name, csv_file)
@@ -158,7 +162,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
 
             if clean:
                 try:
-                    os.unlink(csv_file)
+                    if os.path.exists(csv_file): os.unlink(csv_file)
                     os.unlink(f"{csv_file}.meta.csv")
                 except Exception as ignore:
                     log.info("error unlinking file: " + csv_file, ignore)
@@ -190,6 +194,7 @@ def _fetch_last_date(database, symbol, tz_info, verbose=False):
     except Exception as e:
         log.warn(f"{symbol}: last min/max epoch query failed, load full history: {e}")
         return None, None, 0
+
 
 if __name__ == '__main__':
     cli()

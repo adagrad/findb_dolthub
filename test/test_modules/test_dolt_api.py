@@ -29,12 +29,11 @@ class TestDoltApi(TestCase):
 
     def test_fetch_row(self):
         res = fetch_rows("adagrad/findb", "select * from yfinance_symbol where symbol = 'AAPL'")
-        self.assertIsInstance(res, list)
+        self.assertIsInstance(res, pd.DataFrame)
         if len(res) > 0:
             print("Testing on non empty database")
             self.assertEqual(
-                res[0],
-                {
+                {0: {
                     'active': '1',
                     'exchange': 'NMS',
                     'exchange_description': 'NASDAQ',
@@ -42,7 +41,8 @@ class TestDoltApi(TestCase):
                     'symbol': 'AAPL',
                     'type': 'S',
                     'type_description': 'Equity'
-                }
+                }},
+                res.iloc[0].to_dict(),
             )
 
             self.assertIsNotNone(fetch_rows("adagrad/findb", "select * from yfinance_symbol where symbol = 'AAPL'", first_or_none=True))
