@@ -78,9 +78,10 @@ def _fetch_info(symbols, max_until=None):
         log.info(f"get info for {s}")
         try:
             info = Ticker(s).info
-            infos.append(
-                {col: info[col] if col in info else None for col in headers}
-            )
+            info_dict = {col: info[col] if col in info else None for col in headers}
+
+            # make sure we have symbol primary key for emtpy information
+            info_dict["symbol"] = s
 
             error_count = 0
         except Exception as e:
