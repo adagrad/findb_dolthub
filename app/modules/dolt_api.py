@@ -40,17 +40,17 @@ def fetch_rows(database, query, first_or_none=False):
     if database is None:
         return None
 
-    query += '\nlimit {offset}, {limit}'
-
     df = execute_query(database, query)
     return (df.iloc[0] if len(df) > 0 else None) if first_or_none else df
 
 
 def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200, max_retries=4, **kwargs):
+    log.info(f"execute query: {query}")
     if database.startswith('mysql+pymysql://'):
         log.info(f"use local server {database} instead of http requests")
         return pd.read_sql(query, database)
     else:
+        query += '\nlimit {offset}, {limit}'
         url = 'https://dolthub.com/api/v1alpha1/' + database + '/main?q='
         log.info(f"use the dolthub hosted database over the rest api: {url}")
         offset = page_size * nr_jobs

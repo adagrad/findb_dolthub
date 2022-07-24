@@ -22,7 +22,7 @@ headers = "symbol exchange shortName exchangeTimezoneName exchangeTimezoneShortN
 
 symbol_table_name = 'yfinance_symbol'
 info_table_name = 'yfinance_symbol_info'
-
+max_errors = 50
 
 @click.command()
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
@@ -73,18 +73,23 @@ def _load_symbols(file):
 
 def _fetch_info(symbols, max_until=None):
     infos = []
+    error_count = 0
     for s in symbols:
-        log.info(f"get into for {s}")
+        log.info(f"get info for {s}")
         try:
             info = Ticker(s).info
             infos.append(
                 {col: info[col] if col in info else None for col in headers}
             )
+
+            error_count = 0
         except Exception as e:
             log.info(f"ERROR for symbol {s}, {e}")
+            error_count += 1
         except KeyboardInterrupt:
             break
-        if max_until is not None and datetime.now() >= max_until:
+
+        if max_until is not None and datetime.now() >= max_until or error_count >= max_errors:
             break
 
     return pd.DataFrame(infos)

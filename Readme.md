@@ -78,6 +78,10 @@ and dolthub wants to bring this paradigm to data as well. The project is still v
 really promising and should be supported! Updating your local database is as easy as `git pull` which just becomes 
 `dolt pull`.
 
+### Use a locally synced database
+By default you do not need to have a full database synced locally but just query the rest endpoint of the hosted 
+version on Dolthub. However, you of course can also use a locally hosted database by passing the command line argument
+`--repo-database "mysql+pymysql://root:@localhost/findb"`.
 
 ## Development
 
