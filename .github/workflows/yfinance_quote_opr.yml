@@ -20,7 +20,7 @@ jobs:
     outputs:
       branch: ${{ steps.quotes.outputs.branch }}
     steps:
-      - name: lookup new symbols
+      - name: lookup OPR quotes
         id: quotes
         uses: adagrad/findb_dolthub@v1
         with:
