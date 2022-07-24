@@ -40,7 +40,7 @@ def fetch_rows(database, query, first_or_none=False):
     if database is None:
         return None
 
-    query += 'limit {offset}, {limit}'
+    query += '\nlimit {offset}, {limit}'
 
     df = execute_query(database, query)
     return (df.iloc[0] if len(df) > 0 else None) if first_or_none else df
