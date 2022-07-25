@@ -66,7 +66,7 @@ def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200,
             results = [row for r in results if 'rows' in r and len(r['rows']) > 0 for row in r['rows']]
 
             # check if we have a full last batch
-            if len(results[-1]) < page_size:
+            if len(results) < page_size * nr_jobs:
                 break
 
         return pd.DataFrame(results)
