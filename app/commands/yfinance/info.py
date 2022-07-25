@@ -82,6 +82,10 @@ def _fetch_info(symbols, max_until=None):
 
             # make sure we have symbol primary key for emtpy information
             info_dict["symbol"] = s
+            if any([isinstance(v, (tuple, list, dict))for v in info_dict.values()]):
+                log.warning(f"{s} has illegal columns! {info_dict}")
+            else:
+                infos.append(info_dict)
 
             error_count = 0
         except Exception as e:
