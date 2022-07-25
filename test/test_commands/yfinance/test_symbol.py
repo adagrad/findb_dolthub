@@ -57,6 +57,13 @@ class TestSymbol(TestCase):
             1
         )
 
+    def test__download(self):
+        yfs = YFSession()
+        df, count = _download_new_symbols("A", set(), 1, False, yfs)
+        self.assertGreaterEqual(len(df), 1)
+        self.assertGreaterEqual(count, 1)
+        self.assertTrue("name" in df.columns)
+
     def test__fetch_existing_symbols(self):
         existing_symbols = _fetch_existing_symbols("adagrad/findb", 1, 4, 200, 1)
         self.assertIsInstance(existing_symbols, list)

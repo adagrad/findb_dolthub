@@ -215,41 +215,24 @@ def _next_request(rsession, query_str):
                 "Sec-Fetch-Site": "none",
                 "Sec-Fetch-User": "?1",
                 "TE": "trailers",
+                # "Set-Cookie": "EuConsent=CPcqqIAPcqqIAAOACBESCYCoAP_AAH_AACiQIlNd_X__bX9n-_7_6ft0cY1f9_r3ruQzDhfFs-8F3L_W_LwX32E7NF36pq4KmR4ku1bBIQFtHMnUDUmxaolVrzHsak2cpyNKI7JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dt_-__-vjfV599n_v9fV_789Kf9____-_-___4IQQ_AJMNW4gC7EscCbQMIoQQIwrCQqAUAEFAMLRBYAODgp2VgEusIWACAVARgRAgxBRgwCAAACAJCIAJACwQCIAiAQAAgARAIQAETAILACwMAgABANCxACgAECQgyICI5TAgIgSCglsrEEoK9DTCAOssAKBRGxUACJAABSAgJCwcAwBICXCyQJMULwAw0AGAAIIlCIAMAAQRKFQAYAAgiUA;Version=1;Comment=;Domain=yahoo.com;Path=/;Max-Age=86400"
             }
         )
     )
 
 
 def _fetch(rsession, query_str, headers={}):
-    def _encodeParams(params):
-        encoded = ''
-        for key, value in params.items():
-            encoded += ';' + quote(key) + '=' + quote(str(value))
-        return encoded
-
-    params = {
-        'searchTerm': query_str,
-    }
-
-    protocol = 'https'
-    req = requests.Request(
-        'GET',
-        protocol +'://finance.yahoo.com/_finance_doubledown/api/resource/searchassist' + _encodeParams(params),
-        headers=headers,
-        params=query_string
-    )
-
-    req = req.prepare()
     resp = None
-    print("req " + req.url)
 
     try:
-        resp = rsession.send(req, timeout=(12, 12))
+        url = f"https://finance.yahoo.com/_finance_doubledown/api/resource/searchassist;searchTerm={query_str}?device=console&returnMeta=true&_guc_consent_skip=1658766797"
+        print("req", url)
+        resp = rsession.get(url)
         resp.raise_for_status()
 
         return resp.json()
     except Exception as e:
-        print("ERROR", req, headers, resp.text if resp is not None else "")
+        print("ERROR", url, headers, resp.text if resp is not None else "")
         raise e
 
 
