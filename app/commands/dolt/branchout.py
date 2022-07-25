@@ -3,7 +3,7 @@ import sys
 
 import click
 
-from modules.dolt_api import dolt_checkout_remote_branch, execute_shell, dolt_current_branch
+from modules.dolt_api import dolt_checkout_remote_branch, dolt_current_branch, dolt_checkout
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -17,9 +17,7 @@ if not hasattr(sys.modules[__name__], '__file__'):
 @click.option('-b', '--branch', type=str, required=True, help='Branch name to be crated and checked out')
 def cli(repo_database, force_clone, force_init, source_branch, branch):
     dolt_checkout_remote_branch(repo_database, force_clone, force_init, source_branch)
-
-    rc, std, err = execute_shell("dolt", "checkout", "-b", branch)
-    if rc != 0: raise IOError(std + '\n' + err)
+    dolt_checkout(branch, new=True)
 
     assert dolt_current_branch() == branch, f"Failed to create the new branch {branch}, still on {dolt_current_branch()}"
 

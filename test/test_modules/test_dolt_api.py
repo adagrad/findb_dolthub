@@ -8,12 +8,12 @@ from unittest import TestCase
 import pandas as pd
 
 from modules.dolt_api import fetch_symbols, fetch_rows, execute_shell, dolt_checkout_remote_branch, \
-    dolt_current_branch
+    dolt_current_branch, dolt_checkout, dolt_merge
 
+pwd = os.getcwd()
 
 @contextlib.contextmanager
 def change_dir(path):
-    pwd = os.getcwd()
     print(f"change directory to {path}")
     os.chdir(path)
     yield
@@ -44,7 +44,7 @@ class TestDoltApi(TestCase):
         if len(res) > 0:
             print("Testing on non empty database")
             self.assertEqual(
-                {0: {
+                {
                     'active': '1',
                     'exchange': 'NMS',
                     'exchange_description': 'NASDAQ',
@@ -52,7 +52,7 @@ class TestDoltApi(TestCase):
                     'symbol': 'AAPL',
                     'type': 'S',
                     'type_description': 'Equity'
-                }},
+                },
                 res.iloc[0].to_dict(),
             )
 
@@ -86,29 +86,41 @@ class TestDoltApi(TestCase):
     def test_dolt_current_branch(self):
         with tempfile.TemporaryDirectory() as tmp:
             with change_dir(tmp):
-                os.chdir(tmp)
                 execute_shell("dolt", "init")
                 self.assertEqual("main", dolt_current_branch())
 
     def test_init_checkout_remote(self):
         with tempfile.TemporaryDirectory() as tmp:
             with change_dir(tmp):
-                os.chdir(tmp)
                 dolt_checkout_remote_branch("adagrad/integration_test", False, True, "schema")
                 self.assertEqual("schema", dolt_current_branch())
 
     def test_init_clone_remote(self):
         with tempfile.TemporaryDirectory() as tmp:
             with change_dir(tmp):
-                os.chdir(tmp)
                 dolt_checkout_remote_branch("adagrad/integration_test", True, False, "schema")
                 self.assertEqual("schema", dolt_current_branch())
 
     def test_init_fail_remote(self):
         with tempfile.TemporaryDirectory() as tmp:
             with change_dir(tmp):
-                os.chdir(tmp)
                 with self.assertRaises(IOError):
                     dolt_checkout_remote_branch("adagrad/integration_test", False, False, "schema")
+
+    def test_dolt_checkout_branch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                dolt_checkout_remote_branch("adagrad/integration_test", False, True, "main")
+                dolt_checkout("main")  # checks branch
+
+    def test_dolt_merge(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                dolt_checkout_remote_branch("adagrad/integration_test", False, True, "schema")
+                self.assertEqual("schema", dolt_current_branch())
+
+                # TODO add some data
+
+                dolt_merge("adagrad/integration_test", False, True, "schema", "main", "testing", False, False)
 
 

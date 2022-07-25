@@ -3,6 +3,8 @@ import sys
 
 import click
 
+from modules.dolt_api import dolt_merge
+
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
@@ -18,8 +20,8 @@ if not hasattr(sys.modules[__name__], '__file__'):
 @click.option('--delete-source', default=False, is_flag=True, help='Delete source branch after merge/push')
 @click.option('--theirs', default=False, is_flag=True, help='Resole conflicts using theirs')
 @click.option('--ours', default=False, is_flag=True, help='Resole conflicts using ours')
-def cli(time, output, repo_database, known_symbols, dolt_load):
-    pass
+def cli(repo_database, force_clone, force_init, source_branch, target_branch, commit_message, push, delete_source, theirs, ours):
+    dolt_merge(repo_database, force_clone, force_init, source_branch, target_branch, commit_message, push, delete_source, theirs, ours)
 
 
 if __name__ == '__main__':
