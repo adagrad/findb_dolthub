@@ -2,9 +2,9 @@ name: "Find New Symbols"
 
 on:
   workflow_dispatch:
-  schedule:
-    # run once a week
-    - cron: "0 12 * * 3"
+  #schedule:
+  #  # run every other day
+  #  - cron: "0 12 */2 * *"
 
 env:
   REPO: adagrad
