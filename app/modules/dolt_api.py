@@ -85,6 +85,49 @@ def dolt_load_file(table_name, csv_file) -> Tuple[int, str, str]:
         return 1, "", "File Not Found"
 
 
+def dolt_current_branch():
+    rc, std, err = execute_shell("dolt", "branch")
+    if rc != 0:
+        raise IOError(std + '\n' + err)
+
+    current_branch = [l[2:].strip() for l in  std.splitlines() if l.startswith("*")]
+    return current_branch[0]
+
+
+def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
+    rc, std, err = execute_shell("dolt", "checkout", branch)
+    if rc == 2 and "current directory is not a valid dolt repository" in err:
+        log.warning("current directory is not a dolt repository")
+
+        if force_init and force_clone:
+            raise ValueError("Only one of force clone or force init can be provided")
+        elif force_init:
+            rc, std, err = execute_shell("dolt", "init")
+            if rc != 0: raise IOError(std + '\n' + err)
+
+            rc, std, err = execute_shell("dolt", "remote", "add", "origin", f"https://doltremoteapi.dolthub.com/{repo_database}")
+            if rc != 0: raise IOError(std + '\n' + err)
+
+            rc, std, err = execute_shell("dolt", "fetch", "origin", branch)
+            if rc != 0: raise IOError(std + '\n' + err)
+
+            rc, std, err = execute_shell("dolt", "checkout", branch)
+            if rc != 0: raise IOError(std + '\n' + err)
+        elif force_clone:
+            rc, std, err = execute_shell("dolt", "clone", repo_database, ".")
+            if rc != 0: raise IOError(std + '\n' + err)
+
+            rc, std, err = execute_shell("dolt", "fetch", "origin", branch)
+            if rc != 0: raise IOError(std + '\n' + err)
+
+            rc, std, err = execute_shell("dolt", "checkout", branch)
+            if rc != 0: raise IOError(std + '\n' + err)
+        else:
+            raise IOError(std + '\n' + err)
+
+    assert dolt_current_branch() == branch, f"failed do checkout branch {branch} are on {dolt_current_branch()}"
+
+
 def execute_shell(command, *args, **kwargs):
     res = None, None, None
     threadlock.acquire()

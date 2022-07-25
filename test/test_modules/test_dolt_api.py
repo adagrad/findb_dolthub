@@ -1,12 +1,23 @@
+import contextlib
 import os
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from time import sleep
 from unittest import TestCase
 
 import pandas as pd
 
-from modules.dolt_api import fetch_symbols, fetch_rows, execute_shell
+from modules.dolt_api import fetch_symbols, fetch_rows, execute_shell, dolt_checkout_remote_branch, \
+    dolt_current_branch
+
+
+@contextlib.contextmanager
+def change_dir(path):
+    pwd = os.getcwd()
+    print(f"change directory to {path}")
+    os.chdir(path)
+    yield
+    os.chdir(pwd)
 
 
 class TestDoltApi(TestCase):
@@ -71,3 +82,33 @@ class TestDoltApi(TestCase):
             self.assertListEqual(lines, ['0\n', '1\n', '2\n', '3\n', '4\n', '5\n', '6\n', '7\n', '8\n', '9\n'])
         finally:
             os.unlink(file)
+
+    def test_dolt_current_branch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                os.chdir(tmp)
+                execute_shell("dolt", "init")
+                self.assertEqual("main", dolt_current_branch())
+
+    def test_init_checkout_remote(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                os.chdir(tmp)
+                dolt_checkout_remote_branch("adagrad/integration_test", False, True, "schema")
+                self.assertEqual("schema", dolt_current_branch())
+
+    def test_init_clone_remote(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                os.chdir(tmp)
+                dolt_checkout_remote_branch("adagrad/integration_test", True, False, "schema")
+                self.assertEqual("schema", dolt_current_branch())
+
+    def test_init_fail_remote(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                os.chdir(tmp)
+                with self.assertRaises(IOError):
+                    dolt_checkout_remote_branch("adagrad/integration_test", False, False, "schema")
+
+

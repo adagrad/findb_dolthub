@@ -1,4 +1,4 @@
-# Financial Research Data Base (Dolthub Version)
+# Financial Research Data Base
 
 
 The purpose of this database is to __enable research__. 
@@ -6,8 +6,9 @@ The purpose of this database is to __enable research__.
 There is not much free available financial to support a research driven project. On the other hand a lot of APIs exist 
 to obtain information of any individual asset. What is clearly missing is a broader access to the data in contrast to 
 very specific API calls. To perform a research task the tool of choice usually is SQL. However, since a lot of 
-researchers will use python, pandas and jupyterlab there is also an API server which directly streams pandas 
-DataFrames as simple as this: 
+researchers will use python, pandas and jupyterlab there is also an 
+[API server available on github](https://github.com/adagrad/findb_dolthub) which directly streams pandas DataFrames 
+as simple as this: 
 
 ```python
 import pandas as pd
@@ -25,12 +26,16 @@ and clone the dolt database form the url:
 [dolt clone adagrad/findb](https://www.dolthub.com/repositories/adagrad/findb).
 
 If you also want to use the API, the simplest would be to just use the hosted 
-[docker image](https://github.com/adagrad/findb_dolthub/pkgs/container/finget) on github.
+[docker image](https://github.com/adagrad/findb_dolthub/pkgs/container/finget) from the github container registry.
+
 
 ## Project State
-The project is pre-alpha and any PRs are very welcome. Currently, you will be able to find a pretty big collection 
-of tickers of exchange traded asses. Along with these ticker symbols goes along a collection of end of day open, high,
-low, close data. 
+The project is pre-alpha and developed on [github.com/adagrad/findb_dolthub](https://github.com/adagrad/findb_dolthub)
+and [dolthub.com/adagrad/findb](https://www.dolthub.com/repositories/adagrad/findb). 
+
+Any PRs are very welcome, is it new data sources or API extensions. Currently, you will be able to find a pretty 
+big collection of tickers from exchange traded asses all over the world. Along with these ticker symbols goes along a 
+collection of end of day open, high, low, close data. 
 
 
 ## Data Lifecycle and Frequency
