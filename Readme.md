@@ -86,7 +86,7 @@ really promising and should be supported! Updating your local database is as eas
 ### Use a locally synced database
 By default you do not need to have a full database synced locally but just query the rest endpoint of the hosted 
 version on Dolthub. However, you of course can also use a locally hosted database by passing the command line argument
-`--repo-database "mysql+pymysql://root:@localhost/findb"`.
+`--repo-database "mysql+pymysql://root:@localhost/findb/main"`.
 
 ## Development
 
