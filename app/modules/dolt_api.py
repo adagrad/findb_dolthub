@@ -55,24 +55,26 @@ def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200,
         log.info(f"use the dolthub hosted database over the rest api: {url}")
         offset = page_size * nr_jobs
         pages = [(x * page_size, x * page_size + page_size) for x in range(nr_jobs)]
-        results = pd.DataFrame({})
+        all_rows = []
         done = False
 
         for i in range(max_batches):
             urls = [url + urllib.parse.quote(query.format(**kwargs, offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
             log.info(f"submit batch {i} of batch size {page_size} {urls}")
-            results = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=999, parse_json=True, verbose=False)
+            responses = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=999, parse_json=True, verbose=False)
 
-            assert all([r['query_execution_status'] != 'Error' for r in results]), "\n".join([r['query_execution_message'] for r in results])
-            if any([len(r['rows']) < page_size for r in results]):
+            assert all([r['query_execution_status'] != 'Error' for r in responses]), "\n".join([r['query_execution_message'] for r in responses])
+            if any([len(r['rows']) < page_size for r in responses]):
                 done = True
 
-            results = [row for r in results if 'rows' in r and len(r['rows']) > 0 for row in r['rows']]
+            results = [row for r in responses if 'rows' in r and len(r['rows']) > 0 for row in r['rows']]
+            all_rows.extend(results)
 
             # check if we have a full last batch
             if done: break
 
-        return pd.DataFrame(results)
+        log.info(f"submitted {i} batches found {len(all_rows)}")
+        return pd.DataFrame(all_rows)
 
 
 #

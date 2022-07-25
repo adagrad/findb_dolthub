@@ -1,5 +1,6 @@
 import datetime
 import inspect
+import logging
 import os
 import sys
 import threading
@@ -19,6 +20,7 @@ from modules.threaded import execute_parallel
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
+logging.basicConfig(level=logging.INFO)
 log = get_logger(f'{threading.current_thread().name}.quotes.log')
 
 quote_meta_table_name = 'yfinance_quote_meta'

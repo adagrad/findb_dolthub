@@ -1,4 +1,5 @@
 import inspect
+import logging
 import os.path
 import sys
 from datetime import datetime, timedelta
@@ -13,6 +14,7 @@ from modules.log import get_logger
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
 
+logging.basicConfig(level=logging.INFO)
 log = get_logger(__name__ + ".log")
 
 headers = "symbol exchange shortName exchangeTimezoneName exchangeTimezoneShortName isEsgPopulated gmtOffSetMilliseconds messageBoardId market longName" \

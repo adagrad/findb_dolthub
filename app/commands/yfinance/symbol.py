@@ -1,4 +1,5 @@
 import inspect
+import logging
 import math
 import os.path
 import random
@@ -6,7 +7,6 @@ import re
 import sys
 from datetime import datetime, timedelta
 from time import sleep
-from urllib.parse import quote
 
 import click
 import pandas as pd
@@ -14,6 +14,10 @@ import requests
 
 from modules.dolt_api import fetch_symbols, dolt_load_file
 from modules.requests_session import RequestsSession
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -81,10 +85,12 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
 
 def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, ease, max_runtime, yf_session, output):
     counter = 0
+    longest_query = 0
     while len(possible_symbols) > 0:
         try:
             query = possible_symbols.pop()
             df, count = _download_new_symbols(query, existing_symbols, retries, ease, yf_session)
+            longest_query = max(len(query), longest_query)
 
             if (query in existing_symbols or count > 10) and (len(query) < max_symbol_length + 1 and not query.endswith(exchanges)):
                 if query.endswith("."):
@@ -124,6 +130,8 @@ def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length,
                 _save_symbols(possible_symbols, output + ".possible.symbols")
                 break
 
+    print("DONE! nothing left to check on")
+    print("longest symbol", longest_query)
     return counter
 
 
@@ -226,7 +234,7 @@ def _fetch(rsession, query_str, headers={}):
 
     try:
         url = f"https://finance.yahoo.com/_finance_doubledown/api/resource/searchassist;searchTerm={query_str}?device=console&returnMeta=true&_guc_consent_skip=1658766797"
-        print("req", url)
+        print("search for", query_str)
         resp = rsession.get(url)
         resp.raise_for_status()
 
