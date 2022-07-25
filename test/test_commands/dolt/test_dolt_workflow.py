@@ -1,4 +1,5 @@
 import contextlib
+import datetime
 import os
 import tempfile
 from unittest import TestCase
@@ -34,8 +35,8 @@ class TestDoltPull(TestCase):
                 self.assertEqual(0, rc, err)
 
                 # add data
-                rc, std, err = execute_shell(
-                    "dolt", "sql", "-q", "insert into test values((select coalesce(max(pk) + 1, 0) from test), 'dasdsa')")
+                sql = f"insert into test values({int(datetime.datetime.utcnow().timestamp())}, 'dasdsa')"
+                rc, std, err = execute_shell("dolt", "sql", "-q", sql)
                 self.assertEqual(0, rc, err)
 
                 # dolt push and stage-all
@@ -51,6 +52,46 @@ class TestDoltPull(TestCase):
                 )
                 self.assertEqual(0, rc, err)
 
-
     def test_conflicting_workflow(self):
-        pass
+        main_path = os.path.join(os.path.abspath(os.path.dirname(main.__file__)), "main.py")
+        rc, std, err = execute_shell("python", main_path, "dolt")
+        self.assertEqual(0, rc)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                tst = int(datetime.datetime.utcnow().timestamp())
+
+                # dolt pull main
+                rc, std, err = execute_shell(
+                    "python", main_path, "dolt", "pull", "-d", "adagrad/integration_test", "--force-clone", "-b", "main")
+                self.assertEqual(0, rc, err)
+
+                # add data to main
+                rc, std, err = execute_shell("dolt", "sql", "-q", f"insert into test values({tst}, 'dasdsa')")
+                self.assertEqual(0, rc, err)
+                rc, std, err = execute_shell("dolt", "add", ".")
+                self.assertEqual(0, rc, err)
+                rc, std, err = execute_shell("dolt", "commit", "-m", "test case")
+                self.assertEqual(0, rc, err)
+
+                # dolt branch out test branch
+                rc, std, err = execute_shell(
+                    "python", main_path, "dolt", "branchout", "-d", "adagrad/integration_test", "--force-init", "-s", "schema", "-b", "test_branch")
+                self.assertEqual(0, rc, err)
+
+                # add same data to test branch
+                rc, std, err = execute_shell("dolt", "sql", "-q", f"insert into test values({tst}, 'dasdsa22')")
+                self.assertEqual(0, rc, err)
+                rc, std, err = execute_shell("dolt", "add", ".")
+                self.assertEqual(0, rc, err)
+                rc, std, err = execute_shell("dolt", "commit", "-m", "test case")
+                self.assertEqual(0, rc, err)
+
+                # merge changes and resolve conflicts then push the result
+                rc, std, err = execute_shell(
+                    "python", main_path, "dolt", "merge", "-d", "adagrad/integration_test",
+                    "-s", "test_branch", "-t", "main", "-m", "a fancy commit message", "--theirs", "-p"
+                )
+                self.assertEqual(0, rc, err)
+
+

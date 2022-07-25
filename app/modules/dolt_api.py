@@ -96,12 +96,15 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
 
     # merge source into target
     rc, std, err = execute_shell("dolt", "merge", source_branch)
-    if "CONFLICT" in std and (theirs or ours):
-        rc, std, err = execute_shell("dolt", "conflicts", "resolve", "--theirs" if theirs else "--ours", ".")
-        if rc != 0:raise IOError(std + '\n' + err)
+    if "CONFLICT" in std:
+        if (theirs or ours):
+            rc, std, err = execute_shell("dolt", "conflicts", "resolve", "--theirs" if theirs else "--ours", ".")
+            if rc != 0:raise IOError(std + '\n' + err)
 
-        rc, std, err = execute_shell("dolt", "add", ".")
-        if rc != 0: raise IOError(std + '\n' + err)
+            rc, std, err = execute_shell("dolt", "add", ".")
+            if rc != 0: raise IOError(std + '\n' + err)
+        else:
+            raise IOError(std + '\n' + err)
 
     rc, std, err = execute_shell("dolt", "commit", "-m", commit_message)
     if rc != 0: raise IOError(std + '\n' + err)
