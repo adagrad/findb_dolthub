@@ -6,3 +6,5 @@ scratch*
 /test/test_scratch.py
 /tmp/
 __pycache__/
+.idea/
+!.idea/runConfigurations
