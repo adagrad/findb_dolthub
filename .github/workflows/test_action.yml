@@ -21,4 +21,4 @@ jobs:
         uses: adagrad/findb_dolthub@test
         with:
           entrypoint: /entrypoint2.sh
-          args: "dolt sqlserver -d ${{ env.$REPO }}/${{ env.DATABASE }} -b main --force-clone --and-exec \"dolt sql -q \\\"select count(*) from ${{ env.TEST_TABLE }};\\\"\""
+          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main --force-clone --and-exec \"dolt sql -q \\\"select count(*) from ${{ env.TEST_TABLE }};\\\"\""
