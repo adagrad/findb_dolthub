@@ -153,6 +153,14 @@ def dolt_push(stage_all=False, commit_message=None):
     if rc != 0: raise IOError(std + '\n' + err)
 
 
+def dolt_status():
+    rc, std, err = execute_shell("dolt", "status")
+    if rc != 0:
+        raise IOError(std + '\n' + err)
+
+    return std + '\n' + err
+
+
 def dolt_current_branch():
     rc, std, err = execute_shell("dolt", "branch")
     if rc != 0:

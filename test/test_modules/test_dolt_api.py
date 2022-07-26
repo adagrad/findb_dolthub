@@ -8,7 +8,7 @@ from unittest import TestCase
 import pandas as pd
 
 from modules.dolt_api import fetch_symbols, fetch_rows, execute_shell, dolt_checkout_remote_branch, \
-    dolt_current_branch, dolt_checkout, dolt_merge
+    dolt_current_branch, dolt_checkout, dolt_merge, dolt_status
 
 pwd = os.getcwd()
 
@@ -88,6 +88,22 @@ class TestDoltApi(TestCase):
             with change_dir(tmp):
                 execute_shell("dolt", "init")
                 self.assertEqual("main", dolt_current_branch())
+
+    def test_dolt_status(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                execute_shell("dolt", "init")
+                with open("README.md", "w") as f:
+                    f.write("Hello World")
+
+                self.assertEqual(
+                    'On branch main\n'
+                    'Untracked files:\n'
+                    '  (use "dolt add <table|doc>" to include in what will be committed)\n'
+                    '\tnew doc:        README.md\n'
+                    '\n'
+                    , dolt_status()
+                )
 
     def test_init_checkout_remote(self):
         with tempfile.TemporaryDirectory() as tmp:
