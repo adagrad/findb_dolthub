@@ -2,9 +2,9 @@ name: "Get new PAR quotes"
 
 on:
   workflow_dispatch:
-  schedule:
-    # run once a week
-    - cron: "0 6 * * 0"
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 6 * * 0"
 
 env:
   REPO: adagrad

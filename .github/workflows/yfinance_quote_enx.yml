@@ -2,9 +2,9 @@ name: "Get new ENX quotes"
 
 on:
   workflow_dispatch:
-  schedule:
-    # run once a week
-    - cron: "0 1 * * 1"
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 1 * * 1"
 
 env:
   REPO: adagrad

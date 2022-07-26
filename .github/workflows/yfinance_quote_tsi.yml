@@ -2,6 +2,9 @@ name: "Get new TSI quotes (testable)"
 
 on:
   workflow_dispatch:
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 6 * * 2"
 
 env:
   REPO: adagrad

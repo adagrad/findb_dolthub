@@ -2,9 +2,9 @@ name: "Get new NAS quotes"
 
 on:
   workflow_dispatch:
-  schedule:
-    # run once a week
-    - cron: "0 1 * * 2"
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 1 * * 2"
 
 env:
   REPO: adagrad

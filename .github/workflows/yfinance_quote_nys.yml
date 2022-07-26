@@ -2,9 +2,9 @@ name: "Get new NYS quotes"
 
 on:
   workflow_dispatch:
-  schedule:
-    # run once a week
-    - cron: "0 6 * * 4"
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 6 * * 4"
 
 env:
   REPO: adagrad

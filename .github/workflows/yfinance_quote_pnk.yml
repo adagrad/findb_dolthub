@@ -2,9 +2,9 @@ name: "Get new PNK quotes"
 
 on:
   workflow_dispatch:
-  schedule:
-    # run once a week
-    - cron: "0 6 * * 3"
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 6 * * 3"
 
 env:
   REPO: adagrad
