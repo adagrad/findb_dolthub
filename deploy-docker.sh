@@ -5,7 +5,7 @@ set -e
 
 if [ "$#" -ne 1 ]
 then
-  echo "A tag needs to be provided i.e. latest"
+  echo A tag needs to be provided i.e. \"latest\"
   exit 1
 fi
 
