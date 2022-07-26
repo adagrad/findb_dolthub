@@ -4,3 +4,4 @@ scratch*
 /.env
 /findb/
 /test/test_scratch.py
+/tmp/

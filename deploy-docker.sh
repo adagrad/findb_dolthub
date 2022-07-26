@@ -3,6 +3,14 @@
 # stop on any error
 set -e
 
+if [ "$#" -ne 1 ]
+then
+  echo "A tag needs to be provided i.e. latest"
+  exit 1
+fi
+
+TAG=$1
+
 # load environment variable
 source .env
 
@@ -15,7 +23,7 @@ docker build -t finget .
 
 # tag and push image to github registry
 image=`docker images "finget" -q`
-docker tag $image ghcr.io/adagrad/finget:latest
-docker push ghcr.io/adagrad/finget:latest
+docker tag $image ghcr.io/adagrad/finget:$TAG
+docker push ghcr.io/adagrad/finget:$TAG
 
-git tag v1 -f && git push --tags -f
+git tag $TAG -f && git push --tags -f

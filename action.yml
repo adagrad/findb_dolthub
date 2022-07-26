@@ -1,23 +1,5 @@
 name: 'Findb Action'
 description: 'Fetch and load actions for findb'
-inputs:
-  command1:
-    description: 'Main command to run'
-    required: true
-  command2:
-    description: 'Sub command to run'
-    required: true
-  command_args:
-    description: 'Sub command arguments'
-    required: false
-outputs:
-  branch:
-    description: 'outputs the dolt branch the action made changes to'
 runs:
   using: 'docker'
-  # image: 'Dockerfile'
   image: docker://ghcr.io/adagrad/finget:latest
-  args:
-    - ${{ inputs.command1 }}
-    - ${{ inputs.command2 }}
-    - ${{ inputs.command_args }}

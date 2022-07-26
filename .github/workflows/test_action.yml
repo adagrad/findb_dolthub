@@ -1,0 +1,24 @@
+name: Just Some Action Used for Testing
+
+on:
+  workflow_call:
+
+env:
+  REPO: adagrad
+  DATABASE: integration_test
+  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+  DOLT_BRANCH: "foo/bar-${{ github.run_id }}-${{ github.run_attempt }}"
+  TEST_TABLE: "test"
+
+jobs:
+  development_job:
+    runs-on: ubuntu-latest
+    name: Test workflow
+    steps:
+      - name: list commands
+        id: test
+        uses: adagrad/findb_dolthub@test
+        with:
+          entrypoint: /entrypoint2.sh
+          args: dolt sqlserver -b main --and-exec "dolt sql -q \"select count(*) from test;\""
