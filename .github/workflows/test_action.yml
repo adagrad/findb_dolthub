@@ -21,4 +21,4 @@ jobs:
         uses: adagrad/findb_dolthub@test
         with:
           entrypoint: /entrypoint2.sh
-          args: dolt sqlserver -b main --force-clone --and-exec "dolt sql -q \"select count(*) from test;\""
+          args: dolt sqlserver -d adagrad/integration_test -b main --force-clone --and-exec "dolt sql -q \"select count(*) from test;\""
