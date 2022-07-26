@@ -172,7 +172,7 @@ def dolt_current_branch():
 
 def dolt_checkout(branch, new=False):
     log.info(f"checkout branch {branch}")
-    # TODO maybe we need to fetch earlier
+
     rc, std, err = execute_shell("dolt", "checkout", "-b", branch) if new else execute_shell("dolt", "checkout", branch)
     if rc != 0: raise IOError(std + '\n' + err)
 

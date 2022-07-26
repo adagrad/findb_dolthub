@@ -12,7 +12,7 @@ env:
   TEST_TABLE: "test"
 
 jobs:
-  development_job:
+  test_job:
     runs-on: ubuntu-latest
     name: Test workflow
     steps:

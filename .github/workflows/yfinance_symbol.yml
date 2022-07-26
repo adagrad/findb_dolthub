@@ -11,50 +11,36 @@ env:
   DATABASE: findb
   DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
   DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-  DOLT_COMMIT_ARGS: "-m add_new_symbols --allow-empty"
+  DOLT_BRANCH_SYMBOL: "yfinance/symbol/${{ github.run_id }}-${{ github.run_attempt }}"
+  DOLT_BRANCH_INFO: "yfinance/info/${{ github.run_id }}-${{ github.run_attempt }}"
+  DOLT_COMMIT_MESSAGE: "add new symbols"
 
 jobs:
   search_symbols:
     runs-on: ubuntu-latest
     name: A job to look for new symbols
-    outputs:
-      branch: ${{ steps.search_symbols.outputs.branch }}
     steps:
       - name: lookup new symbols
         id: search_symbols
-        uses: adagrad/findb_dolthub@v1
+        uses: adagrad/findb_dolthub@latest
         with:
-          command1: yfinance
-          command2: symbol
-          command_args: "--time 300 --dolt-load"
+          entrypoint: /entrypoint2.sh
+          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone --and-exec \"fin-get yfinance symbol -d 'mysql+pymysql://root:@localhost/findb/main' --time 300 --dolt-load\""
+
+      - name: push new symbols
+        id: push_symbols
+        uses: adagrad/findb_dolthub@latest
+        with:
+          entrypoint: /entrypoint2.sh
+          args: "dolt push -a -m '${{ env.DDOLT_COMMIT_MESSAGE }}'"
 
   simulate_pr_merge_symbol:
-    uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
     needs: search_symbols
-    secrets: inherit
-    with:
-      branch: ${{ needs.search_symbols.outputs.branch }}
-      commit_message: add_symbols
-
-  load_info:
     runs-on: ubuntu-latest
-    needs: simulate_pr_merge_symbol
-    name: A job to load the info of newly added symbols
-    outputs:
-      branch: ${{ steps.load_info.outputs.branch }}
+    name: Merge remote branch into main
     steps:
-      - name: lookup new symbols
-        id: load_info
-        uses: adagrad/findb_dolthub@v1
+      - name: merge into main
+        uses: adagrad/findb_dolthub@latest
         with:
-          command1: yfinance
-          command2: info
-          command_args: "--time 300 --dolt-load"
-
-  simulate_pr_merge_info:
-    uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
-    needs: load_info
-    secrets: inherit
-    with:
-      branch: ${{ needs.load_info.outputs.branch }}
-      commit_message: add_symbols_info
+          entrypoint: /entrypoint2.sh
+          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} -t main -m '${{ env.DDOLT_COMMIT_MESSAGE }}' --theirs -p"

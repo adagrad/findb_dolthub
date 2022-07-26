@@ -106,9 +106,3 @@ docker tag <image> ghcr.io/adagrad/finget:latest
 docker push ghcr.io/adagrad/finget:latest
 ```
 
-Make sure after changes to the github actions relevant files and containers to 
-also tag the sources with the `v1` tag: 
-
-```bash
-git tag v1 -f && git push --tags -f
-```

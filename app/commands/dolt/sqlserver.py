@@ -6,7 +6,7 @@ from time import sleep
 
 import click
 
-from modules.dolt_api import dolt_checkout_remote_branch
+from modules.dolt_api import dolt_checkout_remote_branch, dolt_checkout
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -17,10 +17,14 @@ if not hasattr(sys.modules[__name__], '__file__'):
 @click.option('-c', '--force-clone', default=False, is_flag=True, help='Force a clone if the working directory is not a dolt repository')
 @click.option('-i', '--force-init', default=False, is_flag=True, help='Force a repo init and add origin if the working directory is not a dolt repository')
 @click.option('-b', '--branch', type=str, default="main", help='Branch name to be pulled and checked out')
+@click.option('-f', '--feature-branch', type=str, default=None, help='Branch off a feature branch from the specified branch')
 @click.option('--and-exec', type=str, default=None, help='Command to be executed after the server has started (stops server afterwards)')
-def cli(repo_database, force_clone, force_init, branch, and_exec):
+def cli(repo_database, force_clone, force_init, branch, feature_branch, and_exec):
     # checkout repo
     dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch)
+
+    if feature_branch is not None:
+        dolt_checkout(feature_branch, True)
 
     # start dlt sql server with defaults
     dolt_sql_server_command = ["dolt", "sql-server"]
