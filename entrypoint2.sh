@@ -5,6 +5,7 @@ set -e
 # show the command we intend executing
 pwd
 echo fin-get "$@"
+mkdir -p findb && cd findb
 
 # prepare dolt environment
 echo dolt config
