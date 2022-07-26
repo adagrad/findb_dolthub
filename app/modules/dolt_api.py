@@ -197,6 +197,7 @@ def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
         if force_init and force_clone:
             raise ValueError("Only one of force clone or force init can be provided")
         elif force_init:
+            log.info("dolt init + add origin")
             dolt_init("main/alternative")
 
             rc, std, err = execute_shell("dolt", "remote", "add", "origin", f"https://doltremoteapi.dolthub.com/{repo_database}")
@@ -205,6 +206,7 @@ def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
             rc, std, err = execute_shell("dolt", "fetch", "origin", branch)
             if rc != 0: raise IOError(std + '\n' + err)
         elif force_clone:
+            log.info("dolt clone")
             rc, std, err = execute_shell("dolt", "clone", repo_database, ".")
             if rc != 0: raise IOError(std + '\n' + err)
         else:

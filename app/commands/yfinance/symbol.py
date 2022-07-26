@@ -12,7 +12,7 @@ import click
 import pandas as pd
 import requests
 
-from modules.dolt_api import fetch_symbols, dolt_load_file
+from modules.dolt_api import fetch_symbols, dolt_load_file, fetch_rows
 from modules.requests_session import RequestsSession
 
 log = logging.getLogger(__name__)
@@ -158,16 +158,8 @@ def _fetch_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, m
 
 def _get_max_symbol_length(repo_database, default_value=21):
     if len(repo_database) > 0 and "None" != repo_database:
-        url = f'https://dolthub.com/api/v1alpha1/{repo_database}/main?q=select max(length(symbol)) as length from {table_name}'
-        resp = requests.get(url)
-
-        try:
-            resp.raise_for_status()
-        except Exception as e:
-            raise ValueError(f"{url}, {resp.text}", e)
-
-        max_symbol_length = int(resp.json()["rows"][0]['length'])
-        return max_symbol_length
+        df = fetch_rows(repo_database, f'select max(length(symbol)) as length from {table_name}', first_or_none=True)
+        return int(df["length"]) if df is not None else default_value
 
     return default_value
 

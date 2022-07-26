@@ -44,10 +44,11 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, and_exec
         else:
             res = subprocess.run(dolt_sql_server_command)
             exit(res.returncode)
-    except KeyboardInterrupt as interrupt:
+    except Exception as e:
         if sql_server is not None:
             sql_server.kill()
-        raise interrupt
+
+        raise e
 
 
 if __name__ == '__main__':

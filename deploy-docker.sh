@@ -22,7 +22,7 @@ docker login ghcr.io -u adagrad -p "$GHCIO"
 docker build -t finget .
 
 # tag and push image to github registry
-image=`docker images "finget" -q`
+image=`docker images "finget:latest" -q`
 docker tag $image ghcr.io/adagrad/finget:$TAG
 docker push ghcr.io/adagrad/finget:$TAG
 
