@@ -5,3 +5,4 @@ scratch*
 /findb/
 /test/test_scratch.py
 /tmp/
+__pycache__/
