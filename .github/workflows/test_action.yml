@@ -1,7 +1,7 @@
 name: Just Some Action Used for Testing
 
 on:
-  workflow_call:
+  workflow_dispatch:
 
 env:
   REPO: adagrad
