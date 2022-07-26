@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     name: Test workflow
     steps:
-      - name: list commands
+      - name: count entries of table test
         id: test
         uses: adagrad/findb_dolthub@test
         with:
           entrypoint: /entrypoint2.sh
-          args: dolt sqlserver -d adagrad/integration_test -b main --force-clone --and-exec "dolt sql -q \"select count(*) from test;\""
+          args: dolt sqlserver -d $REPO/$DATABASE -b main --force-clone --and-exec "dolt sql -q \"select count(*) from $TEST_TABLE;\""
