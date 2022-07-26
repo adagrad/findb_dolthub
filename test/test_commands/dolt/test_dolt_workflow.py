@@ -5,7 +5,7 @@ import tempfile
 from unittest import TestCase
 
 from app import main
-from modules.dolt_api import execute_shell
+from modules.dolt_api import execute_shell, dolt_checkout_remote_branch
 
 pwd = os.getcwd()
 
@@ -95,3 +95,18 @@ class TestDoltPull(TestCase):
                 self.assertEqual(0, rc, err)
 
 
+    def test_dolt_server(self):
+        main_path = os.path.join(os.path.abspath(os.path.dirname(main.__file__)), "main.py")
+        rc, std, err = execute_shell("python", main_path, "dolt")
+        self.assertEqual(0, rc)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with change_dir(tmp):
+                dolt_checkout_remote_branch("adagrad/integration_test", False, True, "main")
+
+                rc, std, err = execute_shell(
+                    "python", main_path, "dolt", "sqlserver", "-d", "adagrad/integration_test", "-b", "main",
+                    "--and-exec", "dolt sql -q \"select count(*) from test;\""
+                )
+                print("\n", std, "\n", err)
+                self.assertEqual(0, rc, err)

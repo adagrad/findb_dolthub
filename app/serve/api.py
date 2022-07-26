@@ -14,6 +14,9 @@ from serve.dataaccess.ohlcv import fetch_ohlcv
 from serve.datastream.pandas_response import make_pandas_response
 from serve.utils.request_util import get_data_args
 
+# get server path
+PATH = os.path.abspath(os.path.dirname(__file__))
+
 # create app
 app = Quart(__name__)
 

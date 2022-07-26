@@ -3,3 +3,4 @@ scratch*
 /todo.md
 /.env
 /findb/
+/test/test_scratch.py

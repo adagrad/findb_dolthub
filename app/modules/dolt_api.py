@@ -90,6 +90,19 @@ def dolt_load_file(table_name, csv_file) -> Tuple[int, str, str]:
         return 1, "", "File Not Found"
 
 
+def dolt_init(alternative_main: str = None):
+    rc, std, err = execute_shell("dolt", "init")
+    if rc != 0: raise IOError(std + '\n' + err)
+
+    if alternative_main is not None:
+        rc, std, err = execute_shell("dolt", "checkout", "-b", alternative_main)
+        if rc != 0: raise IOError(std + '\n' + err)
+
+        rc, std, err = execute_shell("dolt", "branch", "-f", "-d", "main")
+        if rc != 0: raise IOError(std + '\n' + err)
+
+
+
 def dolt_merge(repo_database, force_clone, force_init, source_branch, target_branch, commit_message, push, delete_source, theirs, ours):
     assert not (theirs is True and ours is True), "Nice try, but you can specify theirs and ours at the same time!"
 
@@ -176,8 +189,7 @@ def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
         if force_init and force_clone:
             raise ValueError("Only one of force clone or force init can be provided")
         elif force_init:
-            rc, std, err = execute_shell("dolt", "init")
-            if rc != 0: raise IOError(std + '\n' + err)
+            dolt_init("main/alternative")
 
             rc, std, err = execute_shell("dolt", "remote", "add", "origin", f"https://doltremoteapi.dolthub.com/{repo_database}")
             if rc != 0: raise IOError(std + '\n' + err)
