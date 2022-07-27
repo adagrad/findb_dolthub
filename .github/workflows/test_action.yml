@@ -20,12 +20,10 @@ jobs:
         id: count
         uses: adagrad/findb_dolthub@test
         with:
-          entrypoint: /entrypoint2.sh
           args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main --force-clone --and-exec \"dolt sql -q \\\"select count(*) from ${{ env.TEST_TABLE }};\\\"\""
 
       - name: dolt database status
         id: status
         uses: adagrad/findb_dolthub@test
         with:
-          entrypoint: /entrypoint2.sh
           args: "dolt status"

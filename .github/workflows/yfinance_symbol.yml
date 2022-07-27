@@ -24,7 +24,6 @@ jobs:
         id: search_symbols
         uses: adagrad/findb_dolthub@latest
         with:
-          entrypoint: /entrypoint2.sh
           args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone --and-exec \"fin-get yfinance symbol -d 'mysql+pymysql://root:@localhost/findb/main' --time 300 --dolt-load\""
 
       - name: push new symbols
@@ -42,5 +41,4 @@ jobs:
       - name: merge into main
         uses: adagrad/findb_dolthub@latest
         with:
-          entrypoint: /entrypoint2.sh
           args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} -t main -m '${{ env.DDOLT_COMMIT_MESSAGE }}' --theirs -p"

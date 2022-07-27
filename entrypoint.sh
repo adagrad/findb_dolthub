@@ -4,8 +4,8 @@ set -e
 
 # show the command we intend executing
 pwd
-eval "commit_args=($DOLT_COMMIT_ARGS)"
-echo fin-get $1 $2 $3 and commit with "${commit_args[@]}"
+echo fin-get "$@"
+mkdir -p findb && cd findb
 
 # prepare dolt environment
 echo dolt config
@@ -15,37 +15,5 @@ dolt creds import /tmp/$DOLTHUB_SECRET.jwk
 dolt login $DOLTHUB_SECRET
 dolt config --list
 
-# clone schema branch
-echo dolt init and fetch "$REPO/$DATABASE"
-mkdir $DATABASE && cd $DATABASE
-
-dolt init
-dolt config --list
-dolt remote add origin https://doltremoteapi.dolthub.com/$REPO/$DATABASE
-dolt fetch origin schema
-dolt checkout schema
-
-# branch off into a data branch
-BRANCH=`echo $RANDOM | md5sum | head -c 20`
-BRANCH="$1/$2/$BRANCH"
-
-echo dolt checkout -b "$BRANCH"
-dolt checkout -b "$BRANCH"
-
-# enable tor proxies
-# tor -f /etc/tor/torrc.default &
-
 # run command
-fin-get $1 $2 $3
-
-# commit changes and push data branch
-echo dolt and and commit "${commit_args[@]}"
-dolt add .
-dolt commit "${commit_args[@]}"
-
-echo dolt push --set-upstream origin "$BRANCH"
-dolt push --set-upstream origin "$BRANCH"
-
-# set output variable containing the branch we have worked on
-echo "set output variable branch=$BRANCH"
-echo "::set-output name=branch::$BRANCH"
+fin-get "$@"

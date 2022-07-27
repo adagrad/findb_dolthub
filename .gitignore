@@ -8,3 +8,4 @@ scratch*
 __pycache__/
 .idea/
 !.idea/runConfigurations
+/commands.sh

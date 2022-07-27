@@ -7,11 +7,7 @@ on:
   #  - cron: "0 6 * * 2"
 
 env:
-  REPO: adagrad
-  DATABASE: findb
-  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
-  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-  DOLT_COMMIT_ARGS: "-m add_quotes_tsi --allow-empty"
+  DOLT_BRANCH: "yfinace/quote/tsi/${{ github.run_id }}-${{ github.run_attempt }}"
 
 jobs:
   fetch_quotes:
@@ -28,10 +24,12 @@ jobs:
           command2: quote
           command_args: "-w exchange='TSI' --time 300 --dolt-load --clean"
 
-  simulate_pr_merge:
+  tsi_quotes:
     uses: adagrad/findb_dolthub/.github/workflows/local_merge.yml@main
     needs: fetch_quotes
     secrets: inherit
     with:
-      branch: ${{ needs.fetch_quotes.outputs.branch }}
+      branch: ${{ env.DOLT_BRANCH }}
+      where: "exchange='PNK'"
+      time: 15
       commit_message: add_quotes_tsi
