@@ -31,7 +31,7 @@ jobs:
           args: "dolt status"
 
   simulate_pr_merge:
-    needs: count
+    needs: test_job
     runs-on: ubuntu-latest
     name: Merge branch into main
     steps:
