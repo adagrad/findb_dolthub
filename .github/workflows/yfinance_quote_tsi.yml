@@ -15,7 +15,7 @@ jobs:
     needs: fetch_quotes
     secrets: inherit
     with:
-      branch: ${{ env.DOLT_BRANCH }}
+      branch: "${{ env.DOLT_BRANCH }}"
       where: "exchange='PNK'"
       time: 15
       commit_message: add_quotes_tsi
