@@ -87,7 +87,7 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
         early_exit,
         yf_session,
         output,
-        lambda df, output: save_results(repo_database, df, dolt_load, table_name, output, False)
+        lambda df, output: save_results(repo_database, df, dolt_load, table_name, output, False, index_columns=["symbol", "exchange", "type"])
     )
 
     if dolt_push:

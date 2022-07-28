@@ -1,10 +1,12 @@
 import inspect
-import os
+import logging
 import sys
 
 import click
 
 from modules.dolt_api import dolt_checkout_remote_branch, dolt_checkout, dolt_status, dolt_execute_query, dolt_push
+
+logging.basicConfig(level=logging.INFO)
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())

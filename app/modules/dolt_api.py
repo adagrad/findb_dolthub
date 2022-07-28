@@ -102,7 +102,6 @@ def dolt_init(alternative_main: str = None):
         if rc != 0: raise IOError(std + '\n' + err)
 
 
-
 def dolt_merge(repo_database, force_clone, force_init, source_branch, target_branch, commit_message, push, delete_source, theirs, ours):
     assert not (theirs is True and ours is True), "Nice try, but you can specify theirs and ours at the same time!"
 
@@ -120,12 +119,14 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
             log.info("resolve conflicts using " + "--theirs" if theirs else "--ours")
             rc, std, err = execute_shell("dolt", "conflicts", "resolve", "--theirs" if theirs else "--ours", ".")
             if rc != 0:raise IOError(std + '\n' + err)
-
-            rc, std, err = execute_shell("dolt", "add", ".")
-            if rc != 0: raise IOError(std + '\n' + err)
         else:
             raise IOError(std + '\n' + err)
 
+    # add changes
+    rc, std, err = execute_shell("dolt", "add", ".")
+    if rc != 0: raise IOError(std + '\n' + err)
+
+    # commit changes
     rc, std, err = execute_shell("dolt", "commit", "-m", commit_message)
     if rc != 0 and "no changes added to commit" not in err: raise IOError(std + '\n' + err)
 
@@ -187,11 +188,15 @@ def dolt_checkout(branch, new=False):
     if not new:
         log.info("make sure we are up to date")
         rc, std, err = execute_shell("dolt", "pull")
-        if 'no common ancestor' in err:
+        if "no tracking information for the current branch" in err:
+            log.info("this is a local only branch")
+        elif 'no common ancestor' in err:
             rc, std, err = execute_shell("dolt", "fetch", "origin", branch)
             if rc != 0: raise IOError(std + '\n' + err)
 
             rc, std, err = execute_shell("dolt", "checkout", f"origin/{branch}", "-b", f"{branch}/_{random.randint(0, 99999999)}")
+            if rc != 0: raise IOError(std + '\n' + err)
+        else:
             if rc != 0: raise IOError(std + '\n' + err)
 
 

@@ -60,11 +60,13 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
         if sql_server is not None:
             print("STOPPING Server ... ")
             sql_server.send_signal(signal.SIGINT)
-            sleep(0.5)
-            try:
-                os.unlink(".dolt/sql-server.lock")
-            except Exception:
-                pass
+
+    try:
+        sleep(0.5)
+        os.unlink(".dolt/sql-server.lock")
+    except Exception as e:
+        if os.path.exists(".dolt/sql-server.lock"):
+            print(f"ERROR failed to delete .dolt/sql-server.lock\n{e}")
 
     if push:
         print(f"add and push changes made to the branch {dolt_current_branch()}")

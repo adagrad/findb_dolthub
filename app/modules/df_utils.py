@@ -31,10 +31,11 @@ def df_to_sql_with_replace(df, table_name, db_conn):
 
         conn.execute(table.table.insert(replace_string=""), data)
 
+    log.info(f"insert {len(df)} rows into {db_conn} {table_name}")
     df.to_sql(table_name, db_conn, if_exists='append', method=mysql_replace_into)
 
 
-def save_results(repo_database, df, load_into_dolt, table_name=None, csvfile=None, clear_afterwards=False):
+def save_results(repo_database, df, load_into_dolt, table_name=None, csvfile=None, clear_afterwards=False, index_columns=None):
     has_server = repo_database is not None and "://" in repo_database
 
     if csvfile is not None:
@@ -43,7 +44,7 @@ def save_results(repo_database, df, load_into_dolt, table_name=None, csvfile=Non
     if load_into_dolt:
         if has_server:
             try:
-                df_to_sql_with_replace(df, table_name, repo_database)
+                df_to_sql_with_replace(df.set_index(index_columns) if index_columns is not None else df, table_name, repo_database)
             except Exception as e:
                 if csvfile is None:
                     csvfile = f"{random.random()}.csv"

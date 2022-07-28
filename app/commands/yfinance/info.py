@@ -86,11 +86,12 @@ def _fetch_info(symbols, dolt_load=False, repo_database=None, csv_file=None, ear
             else:
                 save_results(
                     repo_database,
-                    _rename_columns(pd.DataFrame([info_dict])).set_index(["symbol", "exchange"]),
+                    _rename_columns(pd.DataFrame([info_dict])),
                     dolt_load,
                     info_table_name,
                     csv_file,
-                    False
+                    False,
+                    index_columns=["symbol", "exchange"]
                 )
 
             error_count = 0

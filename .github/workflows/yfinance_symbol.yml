@@ -13,7 +13,8 @@ env:
   DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
   DOLT_BRANCH_SYMBOL: "yfinance/symbol/${{ github.run_id }}-${{ github.run_attempt }}"
   DOLT_BRANCH_INFO: "yfinance/info/${{ github.run_id }}-${{ github.run_attempt }}"
-  DOLT_COMMIT_MESSAGE: "add new symbols"
+  DOLT_COMMIT_MESSAGE: "add-new-symbols"
+  RUNTIME: 300
 
 jobs:
   search_symbols:
@@ -24,14 +25,14 @@ jobs:
         id: search_symbols
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone --and-exec \"fin-get yfinance symbol -d 'mysql+pymysql://root:@localhost/findb/main' --time 300 --dolt-load\""
+          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone --and-exec \"fin-get yfinance symbol -d 'mysql+pymysql://root:@localhost/findb' --time ${{ env.RUNTIME }} --dolt-load\""
 
       - name: push new symbols
         id: push_symbols
         uses: adagrad/findb_dolthub@latest
         with:
           entrypoint: /entrypoint2.sh
-          args: "dolt push -a -m '${{ env.DDOLT_COMMIT_MESSAGE }}'"
+          args: "dolt push -a yfinance_symbol -m '${{ env.DOLT_COMMIT_MESSAGE }}'"
 
   simulate_pr_merge_symbol:
     needs: search_symbols
@@ -41,4 +42,7 @@ jobs:
       - name: merge into main
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} -t main -m '${{ env.DDOLT_COMMIT_MESSAGE }}' --theirs -p"
+          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone -t main -m '${{ env.DOLT_COMMIT_MESSAGE }}' --theirs --delete-source -p"
+
+  # TODO add new symbols to meta data of schema table
+  # TODO download info, then merge
