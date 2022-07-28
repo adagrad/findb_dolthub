@@ -7,6 +7,7 @@ cachier
 cchardet
 click
 fastparquet
+humanfriendly
 investpy
 lxml
 pandas

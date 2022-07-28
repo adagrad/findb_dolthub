@@ -13,11 +13,15 @@ RUN mkdir -p /data/findb/
 ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
+ENV DOLT_SQL_SERVER_CONFIG=/doltsqlserver.yml
+COPY doltsqlserver.yml /
 COPY entrypoint*.sh /
 ADD app /opt/
 
 EXPOSE 9050
 EXPOSE 9051
+EXPOSE 3306
 
-WORKDIR /data/findb/
+WORKDIR /data/
+
 ENTRYPOINT ["/entrypoint.sh"]

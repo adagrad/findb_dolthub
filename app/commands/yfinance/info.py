@@ -8,7 +8,9 @@ import click
 import pandas as pd
 from yfinance import Ticker
 
-from modules.dolt_api import fetch_rows, dolt_load_file
+from modules.df_utils import save_results
+from modules.disk_utils import check_disk_full
+from modules.dolt_api import fetch_rows, dolt_push as execute_dolt_push
 from modules.log import get_logger
 
 if not hasattr(sys.modules[__name__], '__file__'):
@@ -32,7 +34,8 @@ max_errors = 50
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
-def cli(time, output, repo_database, known_symbols, dolt_load):
+@click.option('--dolt-push', default=False, is_flag=True, help='Push dolt database changes to remote branch')
+def cli(time, output, repo_database, known_symbols, dolt_load, dolt_push):
     started = datetime.now()
     max_runtime = datetime.now() + timedelta(minutes=time) if time is not None else None
     output = os.path.abspath(output)
@@ -42,20 +45,15 @@ def cli(time, output, repo_database, known_symbols, dolt_load):
     # get starting sets of symbols
     symbols_for_info = _get_symbol_sets(known_symbols, repo_database)
 
+    def early_exit():
+        return (time is not None and datetime.now() >= max_runtime) or check_disk_full(output)
+
     # fetch info
     log.info(f"fetch info for {len(symbols_for_info)} symbols")
-    df = _fetch_info(symbols_for_info, max_runtime)
+    _fetch_info(symbols_for_info, dolt_load, repo_database, output, early_exit)
 
-    # save result
-    _save_result(df, output)
-
-    # finalize the program
-    log.info(f"dolt table import -u {info_table_name} {output}")
-    if dolt_load:
-        rc, out, err = dolt_load_file(info_table_name, output)
-        exit(rc)
-    else:
-        exit(0)
+    if dolt_push:
+        execute_dolt_push([info_table_name], "add yf symbol info")
 
 
 def _get_symbol_sets(known_symbols_file, repo_database, **kwargs):
@@ -73,8 +71,7 @@ def _load_symbols(file):
     return [s.strip().upper() for s in open(file).readlines() if len(s.strip()) > 0]
 
 
-def _fetch_info(symbols, max_until=None):
-    infos = []
+def _fetch_info(symbols, dolt_load=False, repo_database=None, csv_file=None, eary_exit=None):
     error_count = 0
     for s in symbols:
         log.info(f"get info for {s}")
@@ -87,7 +84,14 @@ def _fetch_info(symbols, max_until=None):
             if any([isinstance(v, (tuple, list, dict))for v in info_dict.values()]):
                 log.warning(f"{s} has illegal columns! {info_dict}")
             else:
-                infos.append(info_dict)
+                save_results(
+                    repo_database,
+                    _rename_columns(pd.DataFrame([info_dict])).set_index(["symbol", "exchange"]),
+                    dolt_load,
+                    info_table_name,
+                    csv_file,
+                    False
+                )
 
             error_count = 0
         except Exception as e:
@@ -96,19 +100,54 @@ def _fetch_info(symbols, max_until=None):
         except KeyboardInterrupt:
             break
 
-        if max_until is not None and datetime.now() >= max_until or error_count >= max_errors:
+        if eary_exit is not None and eary_exit():
             break
 
-    return pd.DataFrame(infos)
 
-
-def _save_result(df, file):
-    log.info(f"save dataframe to {file}")
-    if os.path.exists(file):
-        with open(file, 'a') as f:
-            df.to_csv(f, header=False, index=False)
-    else:
-        df.to_csv(file, header=True, index=False)
+def _rename_columns(df):
+    return df.rename(columns={
+        "symbol": "symbol",
+        "exchange": "exchange",
+        "shortName": "short_name",
+        "exchangeTimezoneName": "exchange_timezone",
+        "exchangeTimezoneShortName": "exchange_timezone_short",
+        "isEsgPopulated": "is_esg_populated",
+        "gmtOffSetMilliseconds": "gmt_offset_ms",
+        "messageBoardId": "message_board",
+        "market": "market",
+        "longNamecompanyOfficers": "company_officers",
+        "twitter": "twitter",
+        "name": "name",
+        "startDate": "start_date",
+        "description": "description",
+        "maxAge": "max_age",
+        "zip": "zip",
+        "sector": "sector",
+        "fullTimeEmployees": "full_time_employees",
+        "longBusinessSummary": "long_summary",
+        "city": "city",
+        "phone": "phone",
+        "state": "state",
+        "country": "country",
+        "website": "website",
+        "address1": "address1",
+        "address2": "address2",
+        "address3": "address3",
+        "industryinitInvestment": "industry_init_investment",
+        "family": "family",
+        "categoryName": "categoryName",
+        "initAipInvestment": "init_aip_investment",
+        "subseqIraInvestment": "subseq_ira_investment",
+        "brokerages": "brokerages",
+        "managementInfo": "management_info",
+        "subseqInvestment": "subseq_investment",
+        "legalType": "legal_type",
+        "styleBoxUrl": "style_box_url",
+        "feesExpensesInvestment": "fees_expenses_investment",
+        "feesExpensesInvestmentCat": "fees_expenses_investment_cat",
+        "initIraInvestment": "init_ira_investment",
+        "subseqAipInvestment": "subseq_aip_investment",
+    })
 
 
 if __name__ == '__main__':

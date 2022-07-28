@@ -12,7 +12,9 @@ import click
 import pandas as pd
 import requests
 
-from modules.dolt_api import fetch_symbols, dolt_load_file, fetch_rows
+from modules.df_utils import df_to_csv, save_results
+from modules.disk_utils import check_disk_full
+from modules.dolt_api import fetch_symbols, dolt_load_file, fetch_rows, dolt_push as execute_dolt_push
 from modules.requests_session import RequestsSession
 
 log = logging.getLogger(__name__)
@@ -48,12 +50,13 @@ class YFSession(RequestsSession):
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
+@click.option('--dolt-push', default=False, is_flag=True, help='Push dolt database changes to remote branch')
 @click.option('--no-ease', default=False, is_flag=True, help='Don\'t sleep between http search calls' )
 @click.option('--tor-socks-port', default=None, type=int, help='Tor scks port to access yfinance via TOR')
 @click.option('--tor-control-port', default=None, type=int, help='Tor control port to reset exit IP')
 @click.option('--tor-control-password', default="password", type=str, help='Tor control password to reset exit IP')
 @click.option('--retries', type=int, default=4, help='Maximum number of retries (default=4)')
-def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
+def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, dolt_push, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
     started = datetime.now()
     max_runtime = datetime.now() + timedelta(minutes=time) if time is not None else None
     print(f"started at: {started}, write results to {os.path.abspath(output)} run until: {max_runtime}")
@@ -70,20 +73,28 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
     if fetch_known_symbols_only:
         exit(0)
 
+    def early_exit():
+        return (max_runtime is not None and datetime.now() > max_runtime) or check_disk_full(output)
+
+    # fetch symbols and store result
     yf_session = YFSession(tor_socks_port, tor_control_port, tor_control_password)
-    _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, not no_ease, max_runtime, yf_session, output)
+    _look_for_new_symbols(
+        possible_symbols,
+        existing_symbols,
+        max_symbol_length,
+        retries,
+        not no_ease,
+        early_exit,
+        yf_session,
+        output,
+        lambda df, output: save_results(repo_database, df, dolt_load, table_name, output, False)
+    )
 
-    # finalize the program
-    csv_file = os.path.abspath(output)
-    print(f"dolt table import -u {table_name} {csv_file}")
-    if dolt_load:
-        rc, out, err = dolt_load_file(table_name, csv_file)
-        exit(rc)
-    else:
-        exit(0)
+    if dolt_push:
+        execute_dolt_push([table_name], "add yf symbol")
 
 
-def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, ease, max_runtime, yf_session, output):
+def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, ease, early_exit, yf_session, output, callback=lambda df, output: df_to_csv(df, output)):
     counter = 0
     longest_query = 0
     while len(possible_symbols) > 0:
@@ -112,11 +123,7 @@ def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length,
                 existing_symbols.update(df["symbol"].to_list())
 
                 # save remainder to output file
-                if os.path.exists(output):
-                    with open(output, 'a') as f:
-                        df.to_csv(f, header=False, index=False)
-                else:
-                    df.to_csv(output, header=True, index=False)
+                callback(df, output)
 
                 # save existing symbols for retry purposes
                 _save_symbols(existing_symbols, output + ".existing.symbols")
@@ -125,7 +132,7 @@ def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length,
             counter += 1
         finally:
             # check if we still have some time left to run another search
-            if max_runtime is not None and datetime.now() > max_runtime:
+            if early_exit is not None and early_exit():
                 print(f"maximum allowed minutes reached")
                 _save_symbols(possible_symbols, output + ".possible.symbols")
                 break

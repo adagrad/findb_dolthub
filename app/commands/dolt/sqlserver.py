@@ -1,4 +1,5 @@
 import inspect
+import os
 import subprocess
 import sys
 import shlex
@@ -6,7 +7,7 @@ from time import sleep
 
 import click
 
-from modules.dolt_api import dolt_checkout_remote_branch, dolt_checkout
+from modules.dolt_api import dolt_checkout_remote_branch, dolt_checkout, dolt_status
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -24,13 +25,19 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, and_exec
     dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch)
 
     if feature_branch is not None:
+        print(f"create new feature branch {feature_branch} from {branch}")
         dolt_checkout(feature_branch, True)
+        print(dolt_status())
 
     # start dlt sql server with defaults
     dolt_sql_server_command = ["dolt", "sql-server"]
+    if os.environ.get("DOLT_SQL_SERVER_CONFIG", None) is not None:
+        dolt_sql_server_command += ["--config", os.environ.get("DOLT_SQL_SERVER_CONFIG")]
+
     sql_server = None
 
     try:
+        print("start server:", dolt_sql_server_command)
         if and_exec is not None:
             sql_server = subprocess.Popen(dolt_sql_server_command)
             sleep(1)

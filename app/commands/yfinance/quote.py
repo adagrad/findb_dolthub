@@ -13,6 +13,7 @@ import pytz
 from yfinance import download, Ticker
 from yfinance.utils import auto_adjust
 
+from modules.df_utils import df_to_csv
 from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
 from modules.log import get_logger
 from modules.threaded import execute_parallel
@@ -138,7 +139,7 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
 
             # save as csv
             log.info(f"save csv for {symbol} containing {len(df)} rows to {csv_file}")
-            df.to_csv(csv_file, index=False)
+            df_to_csv(df, csv_file)
 
             min_epoch = float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min()
             max_epoch = df["epoch"].max()
@@ -149,15 +150,18 @@ def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, c
             max_epoch = None
 
         # add another csv file to load containing symbol, min_epoch, max_epoch, delisted
-        pd.DataFrame(
-            [{
-                "symbol": symbol,
-                "min_epoch": min_epoch,
-                "max_epoch": max_epoch,
-                "delisted": int(delisted),
-                "tz_info": str(tz_info)
-            }]
-        ).to_csv(csv_file + ".meta.csv", index=False)
+        df_to_csv(
+            pd.DataFrame(
+                [{
+                    "symbol": symbol,
+                    "min_epoch": min_epoch,
+                    "max_epoch": max_epoch,
+                    "delisted": int(delisted),
+                    "tz_info": str(tz_info)
+                }]
+            ),
+            csv_file + ".meta.csv"
+        )
 
         # load csv into dolt branch
         if dolt_load and os.path.exists(csv_file + ".meta.csv"):

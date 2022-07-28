@@ -4,7 +4,7 @@ import random
 import subprocess
 import urllib.parse
 from threading import Lock
-from typing import Tuple
+from typing import Tuple, Iterable
 
 import pandas as pd
 from request_boost import boosted_requests
@@ -142,7 +142,7 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
 
 def dolt_push(stage_all=False, commit_message=None):
     if stage_all:
-        rc, std, err = execute_shell("dolt", "add", ".")
+        rc, std, err = execute_shell("dolt", "add", *stage_all) if isinstance(stage_all, Iterable) else execute_shell("dolt", "add", ".")
         if rc != 0: raise IOError(std + '\n' + err)
 
         rc, std, err = execute_shell("dolt", "commit", "-m", commit_message if commit_message is not None else 'push local changes')
@@ -176,7 +176,7 @@ def dolt_checkout(branch, new=False):
     rc, std, err = execute_shell("dolt", "checkout", "-b", branch) if new else execute_shell("dolt", "checkout", branch)
     if rc != 0: raise IOError(std + '\n' + err)
 
-    assert dolt_current_branch() == branch, f"failed do checkout branch {branch} are on {dolt_current_branch()}"
+    assert dolt_current_branch() == branch, f"failed to checkout branch {branch} are on {dolt_current_branch()}"
 
     if not new:
         log.info("make sure we are up to date")
@@ -192,7 +192,11 @@ def dolt_checkout(branch, new=False):
 def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
     rc, std, err = execute_shell("dolt", "checkout", branch)
     if rc == 2 and "current directory is not a valid dolt repository" in err:
-        log.warning("current directory is not a dolt repository")
+        log.warning(
+            "current directory is not a dolt repository " +
+            (f"-> clone {repo_database}" if force_clone else f"-> init {repo_database}" if force_init else "") +
+            f" to {os.getcwd()}"
+        )
 
         if force_init and force_clone:
             raise ValueError("Only one of force clone or force init can be provided")
@@ -216,7 +220,7 @@ def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
     dolt_checkout(branch)
 
     assert dolt_current_branch() == branch or dolt_current_branch().startswith(branch + "/_"), \
-        f"failed do checkout branch {branch} are on {dolt_current_branch()}"
+        f"failed to checkout branch {branch} are on {dolt_current_branch()}"
 
 
 def execute_shell(command, *args, **kwargs):
