@@ -20,7 +20,7 @@ if not hasattr(sys.modules[__name__], '__file__'):
 @click.option('-b', '--branch', type=str, default="main", help='Branch name to be pulled and checked out')
 @click.option('-f', '--feature-branch', type=str, default=None, help='Branch off a feature branch from the specified branch')
 @click.option('-a', '--add-changes', type=str, default=".", help='Add eventually added changes, defaults to "." meaning all changes')
-@click.option('-p', '--push', type=str, default=None, help='Push an eventually updated branch')
+@click.option('-p', '--push', default=False, is_flag=True, help='Push an eventually updated branch')
 @click.option('--and-exec', type=str, default=None, help='Command to be executed after the server has started (stops server afterwards)')
 def cli(repo_database, force_clone, force_init, branch, feature_branch, add_changes, push, and_exec):
     # checkout repo
