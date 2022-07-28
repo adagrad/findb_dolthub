@@ -113,9 +113,11 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
     dolt_checkout(target_branch)
 
     # merge source into target
+    log.info(f"merge {source_branch} into {target_branch}")
     rc, std, err = execute_shell("dolt", "merge", source_branch)
     if "CONFLICT" in std:
-        if (theirs or ours):
+        if theirs or ours:
+            log.info("resolve conflicts using " + "--theirs" if theirs else "--ours")
             rc, std, err = execute_shell("dolt", "conflicts", "resolve", "--theirs" if theirs else "--ours", ".")
             if rc != 0:raise IOError(std + '\n' + err)
 
@@ -125,16 +127,19 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
             raise IOError(std + '\n' + err)
 
     rc, std, err = execute_shell("dolt", "commit", "-m", commit_message)
-    if rc != 0: raise IOError(std + '\n' + err)
+    if rc != 0 and "no changes added to commit" not in err: raise IOError(std + '\n' + err)
 
     if push:
+        log.info("push changes")
         dolt_push()
 
     if delete_source:
+        log.warning(f"delete branch {source_branch}")
         rc, std, err = execute_shell("dolt", "branch", "-d", source_branch)
         if rc != 0: raise IOError(std + '\n' + err)
 
         if push:
+            log.warning(f"delete remote branch {source_branch}")
             # dolt push --set-upstream origin schema
             rc, std, err = execute_shell("dolt", "push", "origin", f":{source_branch}")
             if rc != 0: raise IOError(std + '\n' + err)
@@ -142,7 +147,8 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
 
 def dolt_push(stage_all=False, commit_message=None):
     if stage_all:
-        rc, std, err = execute_shell("dolt", "add", *stage_all) if isinstance(stage_all, Iterable) else execute_shell("dolt", "add", ".")
+        stage_tables = stage_all if isinstance(stage_all, (tuple, list, set)) else ["."]
+        rc, std, err = execute_shell("dolt", "add", *stage_tables)
         if rc != 0 and "Unknown tables" not in err: raise IOError(std + '\n' + err)
 
         rc, std, err = execute_shell("dolt", "commit", "-m", commit_message if commit_message is not None else 'push local changes')

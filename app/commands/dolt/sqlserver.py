@@ -1,8 +1,9 @@
 import inspect
 import os
+import shlex
+import signal
 import subprocess
 import sys
-import shlex
 from time import sleep
 
 import click
@@ -55,18 +56,23 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
         else:
             res = subprocess.run(dolt_sql_server_command)
             rc = res.returncode
-    except Exception as e:
+    finally:
         if sql_server is not None:
-            sql_server.kill()
-
-        raise e
+            print("STOPPING Server ... ")
+            sql_server.send_signal(signal.SIGINT)
+            sleep(0.5)
+            try:
+                os.unlink(".dolt/sql-server.lock")
+            except Exception:
+                pass
 
     if push:
+        print(f"add and push changes made to the branch {dolt_current_branch()}")
+
         if rc != 0:
-            print(f"ERROR The last command exitid with rc: {rc}")
+            print(f"ERROR The last command exited with rc: {rc}")
             exit(rc)
 
-        print(f"add and push changes made to the branch {dolt_current_branch()}")
         dolt_push(add_changes.split(" "), and_exec if and_exec is not None else "add changes from server run")
 
 
