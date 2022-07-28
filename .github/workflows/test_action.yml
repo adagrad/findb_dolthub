@@ -38,4 +38,4 @@ jobs:
       - name: merge into main
         uses: adagrad/findb_dolthub@test
         with:
-          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH }} -t main -m integration-test --theirs -p --delete-source"
+          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH }} --force-clone -t main -m integration-test --theirs -p --delete-source"

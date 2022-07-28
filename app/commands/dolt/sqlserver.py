@@ -38,6 +38,7 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
         dolt_sql_server_command += ["--config", os.environ.get("DOLT_SQL_SERVER_CONFIG")]
 
     sql_server = None
+    rc = -1
 
     try:
         print("start server:", dolt_sql_server_command)
@@ -49,11 +50,11 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
             sub_command_splitter = shlex.shlex(and_exec, posix=True)
             sub_command_splitter.whitespace_split = True
             res = subprocess.run(list(sub_command_splitter))
+            rc = res.returncode
             sql_server.kill()
-            exit(res.returncode)
         else:
             res = subprocess.run(dolt_sql_server_command)
-            exit(res.returncode)
+            rc = res.returncode
     except Exception as e:
         if sql_server is not None:
             sql_server.kill()
@@ -61,6 +62,10 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
         raise e
 
     if push:
+        if rc != 0:
+            print(f"ERROR The last command exitid with rc: {rc}")
+            exit(rc)
+
         print(f"add and push changes made to the branch {dolt_current_branch()}")
         dolt_push(add_changes.split(" "), and_exec if and_exec is not None else "add changes from server run")
 
