@@ -143,10 +143,10 @@ def dolt_merge(repo_database, force_clone, force_init, source_branch, target_bra
 def dolt_push(stage_all=False, commit_message=None):
     if stage_all:
         rc, std, err = execute_shell("dolt", "add", *stage_all) if isinstance(stage_all, Iterable) else execute_shell("dolt", "add", ".")
-        if rc != 0: raise IOError(std + '\n' + err)
+        if rc != 0 and "Unknown tables" not in err: raise IOError(std + '\n' + err)
 
         rc, std, err = execute_shell("dolt", "commit", "-m", commit_message if commit_message is not None else 'push local changes')
-        if rc != 0: raise IOError(std + '\n' + err)
+        if rc != 0 and "no changes added to commit" not in err: raise IOError(std + '\n' + err)
 
     branch = dolt_current_branch()
     rc, std, err = execute_shell("dolt", "push", "--set-upstream", "origin", branch)
@@ -221,6 +221,12 @@ def dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch):
 
     assert dolt_current_branch() == branch or dolt_current_branch().startswith(branch + "/_"), \
         f"failed to checkout branch {branch} are on {dolt_current_branch()}"
+
+
+def dolt_execute_query(query):
+    rc, std, err = execute_shell("dolt", "sql", "-q", query)
+    if rc != 0:
+        raise IOError(std + '\n' + err)
 
 
 def execute_shell(command, *args, **kwargs):
