@@ -62,7 +62,23 @@ A customized version of [Benny-/Yahoo-ticker-symbol-downloader](https://github.c
 is used to get the list of "all" symbols. [ranaroussi/yfinance](https://github.com/ranaroussi/yfinance) is used for the
 sector and industry information. And a lot of custom and direct _requests_ calls.
 
-## Fetch Data Locally
+## Fetch Data
+
+The idea is to fetch as few data as possible over wire and just pull/push the deltas. This is exactly what git does 
+and dolthub wants to bring this paradigm to data as well. The project is still very early but the idea behind it is 
+really promising and should be supported! Updating your local database is as easy as `git pull` which just becomes 
+`dolt pull`.
+
+### Do Research
+
+While doing research another big benefit of the git likeliness is that you can simply branch off a new research 
+branch. 
+
+`dolt checkout -b research/a-cool-research-topic`
+
+Now you can create tables and mess with data safely without producing a mess.     
+
+### Fetch Data Locally
 
 While as already pointed out it is not recommended to hit the servers of various sources more often as actually needed (
 hence use the already existing data). Here are some commands to execute and test the commands locally.
@@ -73,13 +89,6 @@ docker build -t finget .
 docker run --env-file .env -v`pwd`:/data -w /data -it finget <command> <args>
 # i.e docker run --env-file .env -v /tmp/foo/:/data -w /data -it finget yfinance symbol "--time 300 --dolt-load"
 ```
-
-### Integration to dolthub
-
-The idea is to fetch as few data as possible over wire and just pull/push the deltas. This is exactly what git does 
-and dolthub wants to bring this paradigm to data as well. The project is still very early but the idea behind it is 
-really promising and should be supported! Updating your local database is as easy as `git pull` which just becomes 
-`dolt pull`.
 
 ### Use a locally synced database
 By default you do not need to have a full database synced locally but just query the rest endpoint of the hosted 
