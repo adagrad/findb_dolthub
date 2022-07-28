@@ -52,6 +52,7 @@ jobs:
           args: "dolt sql -d adagrad/findb --force-clone -b schema -q \"insert into _symbol select distinct symbol, 'yfinance' from \\`findb/main\\`.yfinance_symbol ys where not exists (select 1 from _symbol s where s.symbol = ys.symbol and s.source = 'yfinance');\" -p"
 
   update_info:
+    needs: simulate_pr_merge_symbol
     runs-on: ubuntu-latest
     name: A job to look for detailed infos for new symbols
     steps:
