@@ -38,8 +38,8 @@ jobs:
         uses: adagrad/findb_dolthub@test
         with:
           # TODO later we want to have symbols and metadata in the "schema" branch where we can do this lightweight action
-          #args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b schema -f ${{ inputs.branch }} --force-init --and-exec \"fin-get yfinance quote -d 'mysql+pymysql://root:@localhost/findb/schema' -w \\\"${{ inputs.where }}\\\" --time ${{ inputs.time }} --dolt-load\""
-          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ inputs.branch }} --force-clone --and-exec \"fin-get yfinance quote -d 'mysql+pymysql://root:@localhost/findb/main' -w \\\"${{ inputs.where }}\\\" --time ${{ inputs.time }} --dolt-load\""
+          #args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ inputs.branch }} --force-clone --and-exec \"fin-get yfinance quote -d 'mysql+pymysql://root:@localhost/findb' -w \\\"${{ inputs.where }}\\\" --time ${{ inputs.time }} --dolt-load\""
+          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b schema -f ${{ inputs.branch }} --force-init --and-exec \"fin-get yfinance quote -d 'mysql+pymysql://root:@localhost/findb' -w \\\"${{ inputs.where }}\\\" --time ${{ inputs.time }} --dolt-load\""
 
       - name: push new symbols
         id: push_symbols

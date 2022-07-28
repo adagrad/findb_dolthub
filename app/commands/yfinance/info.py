@@ -61,7 +61,7 @@ def _get_symbol_sets(known_symbols_file, repo_database, **kwargs):
     if known_symbols_file is not None:
         return _load_symbols(known_symbols_file)
 
-    query = f"select symbol from {symbol_table_name} s where not exists (select 1 from {info_table_name} i where i.symbol = s.symbol)"
+    query = f"select distinct symbol from {symbol_table_name} s where not exists (select 1 from {info_table_name} i where i.symbol = s.symbol)"
     df = fetch_rows(repo_database, query)
 
     return df["symbol"].tolist()
