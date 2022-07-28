@@ -22,7 +22,7 @@ jobs:
         id: count
         uses: adagrad/findb_dolthub@test
         with:
-          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main --force-clone -f ${{ env.DOLT_BRANCH }} --push --and-exec \"mysql -h 127.0.0.1 -u root -e \\\"update ${{ env.TEST_TABLE }} set col1='${{ env.DOLT_BRANCH }}' where pk=0;\\\"\""
+          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main --force-clone -f ${{ env.DOLT_BRANCH }} --push --and-exec \"mysql -h 127.0.0.1 -u root -D findb -e \\\"update ${{ env.TEST_TABLE }} set col1='${{ env.DOLT_BRANCH }}' where pk=0;\\\"\""
 
       - name: dolt database status
         id: status
