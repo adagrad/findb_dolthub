@@ -19,7 +19,7 @@ from modules.requests_session import RequestsSession
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
+max_errors = 10
 
 if not hasattr(sys.modules[__name__], '__file__'):
     __file__ = inspect.getfile(inspect.currentframe())
@@ -96,6 +96,7 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
 
 def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, ease, early_exit, yf_session, output, callback=lambda df, output: df_to_csv(df, output)):
     counter = 0
+    error_count = 0
     longest_query = 0
     while len(possible_symbols) > 0:
         try:
@@ -130,9 +131,15 @@ def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length,
 
             # loop counter
             counter += 1
+            error_count = 0
+        except Exception as e:
+            error_count += 1
+            log.error(f"{error_count}: {e}")
+            if error_count > max_errors:
+                raise e
         finally:
             # check if we still have some time left to run another search
-            if early_exit is not None and early_exit():
+            if (early_exit is not None and early_exit()):
                 print(f"maximum allowed minutes reached")
                 _save_symbols(possible_symbols, output + ".possible.symbols")
                 break

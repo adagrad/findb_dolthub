@@ -12,6 +12,7 @@ RUN mkdir -p /data/findb/
 
 ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
+RUN apt-get install -y default-mysql-client
 
 ENV DOLT_SQL_SERVER_CONFIG=/doltsqlserver.yml
 COPY doltsqlserver.yml /
