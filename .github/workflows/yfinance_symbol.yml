@@ -22,12 +22,12 @@ jobs:
     name: A job to look for new symbols
     steps:
       - name: lookup new symbols
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone --and-exec \"fin-get yfinance symbol -d 'mysql+pymysql://root:@localhost/findb' --time ${{ env.RUNTIME }} --dolt-load\""
 
       - name: push new symbols
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt push -a yfinance_symbol -m '${{ env.DOLT_COMMIT_MESSAGE }}'"
 
@@ -37,7 +37,7 @@ jobs:
     name: Merge remote branch into main
     steps:
       - name: merge into main
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone -t main -m '${{ env.DOLT_COMMIT_MESSAGE }}' --theirs --delete-source -p"
 
@@ -47,7 +47,7 @@ jobs:
     name: Update meta table with newest symbols
     steps:
       - name: update _symbol
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt sql -d adagrad/findb --force-clone -b schema -q \"insert into _symbol select distinct symbol, 'yfinance' from \\`findb/main\\`.yfinance_symbol ys where not exists (select 1 from _symbol s where s.symbol = ys.symbol and s.source = 'yfinance');\" -p"
 
@@ -56,12 +56,12 @@ jobs:
     name: A job to look for detailed infos for new symbols
     steps:
       - name: lookup info details
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_INFO }} --force-clone --and-exec \"fin-get yfinance info -d 'mysql+pymysql://root:@localhost/findb' --time ${{ env.RUNTIME }} --dolt-load\""
 
       - name: push new symbols
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt push -a yfinance_symbol -m '${{ env.DOLT_COMMIT_MESSAGE }}'"
 
@@ -71,6 +71,6 @@ jobs:
     name: Merge remote branch into main
     steps:
       - name: merge into main
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@test
         with:
           args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_INFO }} --force-clone -t main -m '${{ env.DOLT_COMMIT_MESSAGE }}' --theirs --delete-source -p"
