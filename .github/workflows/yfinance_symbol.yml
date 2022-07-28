@@ -44,5 +44,15 @@ jobs:
         with:
           args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone -t main -m '${{ env.DOLT_COMMIT_MESSAGE }}' --theirs --delete-source -p"
 
-  # TODO add new symbols to meta data of schema table
+  update_meta_tables:
+    needs: simulate_pr_merge_symbol
+    runs-on: ubuntu-latest
+    name: Update meta table with newest symbols
+    steps:
+      - name: update _symbol
+        uses: adagrad/findb_dolthub@latest
+        with:
+          args: "dolt sql -d adagrad/findb --force-clone -b schema -q \"insert into _symbol select distinct symbol, 'yfinance' from \\\`findb/main\\\`.yfinance_symbol ys where not exists (select 1 from _symbol s where s.symbol = ys.symbol and s.source = 'yfinance');\" -p"
+
+
   # TODO download info, then merge

@@ -19,7 +19,7 @@ if not hasattr(sys.modules[__name__], '__file__'):
 @click.option('-b', '--branch', type=str, default="main", help='Branch name to be pulled and checked out')
 @click.option('-f', '--feature-branch', type=str, default=None, help='Branch off a feature branch from the specified branch')
 @click.option('-q', '--query', type=str, default=None, help='SQL query to execute')
-@click.option('-p', '--push', type=str, default=None, help='Push the updated branch')
+@click.option('-p', '--push',  default=False, is_flag=True, help='Push the updated branch')
 def cli(repo_database, force_clone, force_init, branch, feature_branch, query, push):
     # checkout repo
     dolt_checkout_remote_branch(repo_database, force_clone, force_init, branch)
