@@ -2,9 +2,12 @@ import logging
 import os
 import random
 
+from sqlalchemy import create_engine
+
 from modules.dolt_api import dolt_load_file
 
 log = logging.getLogger(__name__)
+engine = None
 
 
 def df_to_csv(df, file):
@@ -17,6 +20,10 @@ def df_to_csv(df, file):
 
 
 def df_to_sql_with_replace(df, table_name, db_conn):
+    global engine
+    if engine is None:
+        engine = create_engine(db_conn)
+
     def mysql_replace_into(table, conn, keys, data_iter):
         from sqlalchemy.ext.compiler import compiles
         from sqlalchemy.sql.expression import Insert
@@ -31,8 +38,10 @@ def df_to_sql_with_replace(df, table_name, db_conn):
 
         conn.execute(table.table.insert(replace_string=""), data)
 
-    log.info(f"insert {len(df)} rows into {db_conn} {table_name}")
-    df.to_sql(table_name, db_conn, if_exists='append', method=mysql_replace_into)
+    if len(df) > 0:
+        with engine.connect() as connection:
+            log.info(f"insert {len(df)} rows into {db_conn} {table_name}")
+            df.to_sql(table_name, connection, if_exists='append', method=mysql_replace_into)
 
 
 def save_results(repo_database, df, load_into_dolt, table_name=None, csvfile=None, clear_afterwards=False, index_columns=None):

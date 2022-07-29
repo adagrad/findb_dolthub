@@ -10,10 +10,11 @@ from functools import partial
 import click
 import pandas as pd
 import pytz
-from yfinance import download, Ticker
+from yfinance import Ticker
 from yfinance.utils import auto_adjust
 
-from modules.df_utils import df_to_csv
+from modules.df_utils import df_to_csv, save_results
+from modules.disk_utils import check_disk_full
 from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
 from modules.log import get_logger
 from modules.threaded import execute_parallel
@@ -32,190 +33,169 @@ quote_table_name = 'yfinance_quote'
 @click.command()
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
-@click.option('-w', '--where', type=str, default=None, help='A "where" constraint provided for the selection of symbols from the database')
-@click.option('-s', '--symbols', type=str, default=None, help='A file of symbols (one per line) to fetch prices')
+@click.option('-i', '--inactive', type=int, default=None, help='Whether only active (0)/inactive(1) or both (default) symbols should be fetched')
 @click.option('-o', '--output-dir', type=str, default='.', help='Path to store downloaded csv files')
 @click.option('-p', '--parallel-threads', type=int, default=10, help='Number of parallel threads')
+@click.option('-n', '--include-new', default=False, is_flag=True, help='Also look for symbols without any quote (need main branch to be present)')
 @click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
 @click.option('--clean', default=False, is_flag=True, help='Deletes intermediary files directly after load (only works together with --dolt-load)')
-def cli(time, repo_database, where, symbols, output_dir, parallel_threads, dolt_load, clean):
+def cli(time, repo_database, inactive, output_dir, parallel_threads, include_new, dolt_load, clean):
     max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
     if repo_database == "" or repo_database == "None":
         repo_database = None
 
-    # select tickers from dolt using a where query or allow a list of symbols to be passed as a file
-    assert (where is not None and repo_database is not None) or symbols is not None, \
-        "Either a query (and database repository) or a symbols file has to be provided"
+    log.info(f"select symbols where inactive = {inactive}")
+    last_state = _select_last_state(repo_database, include_new)
 
-    print(f"select symbols where {where}")
-    symbols = _select_tickers(repo_database, where, symbols)
+    if inactive is not None:
+        last_state = last_state[last_state["delisted"] == inactive]
 
+    log.info(f"found {len(last_state)} quotes to fetch prices for")
+    download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_load, clean, parallel_threads)
+
+
+def download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_load=False, clean=False, num_threads=4):
     execute_parallel(
         partial(
             _fetch_data,
             database=repo_database,
             dolt_load=dolt_load,
             path=output_dir,
-            max_runtime=max_runtime,
+            early_exit=lambda: (max_runtime is not None and datetime.datetime.now() >= max_runtime) or check_disk_full(),
             clean=clean,
         ),
-        symbols,
-        "symbol",
-        parallel_threads
+        last_state.iterrows(),
+        "last_state",
+        num_threads
     )
 
-
-def _select_tickers(database, where, symbols_file, nr_jobs=5):
-    if symbols_file is not None:
-        return [s.strip().upper() for s in open(symbols_file).readlines() if len(s.strip()) > 0]
-
-    fetched_symbols = fetch_symbols(database, where, with_timezone=True, nr_jobs=nr_jobs)
-    print(f"fetched {len(fetched_symbols)} symbols from database")
-    return fetched_symbols
+    print("done!")
 
 
-def _fetch_data(database, symbol, path='.', dolt_load=False, max_runtime=None, clean=False):
-    if max_runtime is not None and datetime.datetime.now() >= max_runtime:
-        log.info("max time reached exit before fetching", symbol)
-        return
-
-    # split symbol and time zone
-    if isinstance(symbol, tuple):
-        symbol, tz_info = symbol[0], pytz.timezone(symbol[1])
+def _select_last_state(database, include_new_symbols=False):
+    if include_new_symbols:
+        query = """
+            select s.symbol, q.first_quote_epoch, q.last_quote_epoch, e.timezone as tz_info, coalesce(q.delisted, 0) as delisted 
+              from `findb/main`.yfinance_symbol s
+              join `findb/main`.tzinfo_exchange e on e.symbol = s.exchange
+              left outer join _quote q on q.symbol = s.symbol and q.source = 'yfinance'
+             where (q.last_quote_epoch is null or q.last_quote_epoch < unix_timestamp(date_sub(curdate(), interval 1 day)))
+             order by last_quote_epoch is null desc, last_quote_epoch asc
+        """
     else:
-        tz_info = pytz.timezone('US/Eastern')
+        query = """
+            select first_quote_epoch, last_quote_epoch, tz_info, delisted 
+              from _quote
+             where (last_quote_epoch is null or last_quote_epoch < unix_timestamp(date_sub(curdate(), interval 1 day)))
+             order by last_quote_epoch is null desc, last_quote_epoch asc
+        """
+
+    return fetch_rows(database, query)
+
+
+def _fetch_data(database, last_state, path='.', dolt_load=False, early_exit=None, clean=False):
+    last_state = last_state[1] if isinstance(last_state, tuple) else last_state
+    symbol = last_state["symbol"]
+    tz_info = pytz.timezone(last_state["tz_info"]) if last_state["tz_info"] is not None else pytz.timezone('US/Eastern')
+    first_price_date, last_price_date = last_state["first_quote_epoch"], last_state["last_quote_epoch"]
+    delisted = last_state["delisted"] if last_state["delisted"] is not None else 0
+
+    # check eary exit
+    if early_exit is not None and early_exit():
+        log.error(f"max time reached or disk almost full, exit before fetching {symbol}")
+        return f"skipped {symbol}"
+
+    # parse dates
+    first_price_date = datetime.datetime.fromtimestamp(first_price_date, tz=tz_info) if not pd.isna(first_price_date) else None
+    last_price_date = datetime.datetime.fromtimestamp(last_price_date, tz=tz_info) if not pd.isna(last_price_date) else None
 
     # define result file name
     csv_file = os.path.abspath(os.path.join(path, f"{str(symbol)}.csv"))
 
     # try to fetch quotes
     try:
-        first_price_date, last_price_date, delisted = _fetch_last_date(database, symbol, tz_info)
-        if delisted:
-            log.warn(f"{symbol} is marked as delisted, skipping!")
-            return  # TODO later allow action on delisted items
-
-        try:
-            if last_price_date is None:
-                log.info(f"{symbol}: no last price date available, fetch max history")
-                #df = download([symbol], progress=False, show_errors=False)
-                df = Ticker(symbol).history(period='max')
-            else:
-                # fetch data, and overwrite the last couple of days in case of error corrections
-                log.info(f"{symbol}: fetch for new prices from {last_price_date}")
-                # df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
-                df = Ticker(symbol).history(start=(last_price_date - timedelta(days=5)).date())
-        except KeyError as ke:
-            log.warn(f"dataframe does not have key {ke} {symbol}")
-            df = pd.DataFrame({})
-
-        if len(df) > 0:
-            # fix hick ups
-            if "Adj. Close" in df.columns:
-                log.warn("Auto Adjustment failed for some reason")
-                df = auto_adjust(df)
-
-            if "Dividends" not in df.columns:
-                log.warn("Add missing column Dividends")
-                df["Dividends"] = None
-
-            if "Stock Splits" not in df.columns:
-                log.warn("Add missing column Stock Splits")
-                df["Stock Splits"] = None
-
-            # insert timezone from exchange
-            df.insert(0, "tzinfo", str(tz_info))
-
-            # convert date to float
-            df.insert(0, "epoch", df.index.to_series().apply(lambda x: x.tz_localize(tz_info).to_pydatetime().timestamp()))
-
-            # add symbol to dataframe
-            df.insert(0, "symbol", symbol)
-
-            # rename columns
-            df = df.rename(
-                columns={"Open": "o", "High": "h", "Low": "l", "Close": "c", "Volume": "v", "Dividends": "dividend", "Stock Splits": "split"}
-            )
-
-            # save as csv
-            log.info(f"save csv for {symbol} containing {len(df)} rows to {csv_file}")
-            df_to_csv(df, csv_file)
-
-            min_epoch = float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min()
-            max_epoch = df["epoch"].max()
+        if last_price_date is None:
+            log.info(f"{symbol}: no last price date available, fetch max history")
+            #df = download([symbol], progress=False, show_errors=False)
+            df = Ticker(symbol).history(period='max')
         else:
-            log.info(f"{symbol} no data found, might be delisted")
-            delisted = True
-            min_epoch = None
-            max_epoch = None
+            # fetch data, and overwrite the last couple of days in case of error corrections
+            log.info(f"{symbol}: fetch for new prices from {last_price_date}")
+            # df = download([symbol], start=(last_price_date - timedelta(days=5)).date(), progress=False, show_errors=False)
+            df = Ticker(symbol).history(start=(last_price_date - timedelta(days=5)).date())
+    except KeyError as ke:
+        log.warn(f"dataframe does not have key {ke} {symbol}")
+        df = pd.DataFrame({})
 
-        # add another csv file to load containing symbol, min_epoch, max_epoch, delisted
-        df_to_csv(
-            pd.DataFrame(
-                [{
-                    "symbol": symbol,
-                    "min_epoch": min_epoch,
-                    "max_epoch": max_epoch,
-                    "delisted": int(delisted),
-                    "tz_info": str(tz_info)
-                }]
-            ),
-            csv_file + ".meta.csv"
+    if len(df) > 0:
+        # fix hick ups
+        if "Adj. Close" in df.columns:
+            log.warn("Auto Adjustment failed for some reason")
+            df = auto_adjust(df)
+
+        if "Dividends" not in df.columns:
+            log.warn("Add missing column Dividends")
+            df["Dividends"] = None
+
+        if "Stock Splits" not in df.columns:
+            log.warn("Add missing column Stock Splits")
+            df["Stock Splits"] = None
+
+        # insert timezone from exchange
+        df.insert(0, "tzinfo", str(tz_info))
+
+        # convert date to float
+        df.insert(0, "epoch", df.index.to_series().apply(lambda x: x.tz_localize(tz_info).to_pydatetime().timestamp()))
+
+        # add symbol to dataframe
+        df.insert(0, "symbol", symbol)
+
+        # rename columns
+        df = df.rename(
+            columns={"Open": "o", "High": "h", "Low": "l", "Close": "c", "Volume": "v", "Dividends": "dividend", "Stock Splits": "split"}
         )
 
-        # load csv into dolt branch
-        if dolt_load and os.path.exists(csv_file + ".meta.csv"):
-            if os.path.exists(csv_file):
-                log.info(f"dolt table import -u {quote_table_name} {csv_file}")
-                rc, out, err = dolt_load_file(quote_table_name, csv_file)
-                if "There are fewer columns in the import file's schema than the table's schema" in err:
-                    log.warn(f"{symbol}, {out}, {err}")
+        # save as csv
+        log.info(f"save csv for {symbol} containing {len(df)} rows to {csv_file}")
+        df_to_csv(df, csv_file)
 
-                if rc != 0:
-                    log.error(f"ERROR: load {csv_file} failed\n{out}\n{err}", exc_info=False)
-                    raise ValueError(f"ERROR: load {csv_file} failed\n{out}\n{err}")
+        min_epoch = float(first_price_date.timestamp()) if first_price_date is not None else df["epoch"].min()
+        max_epoch = df["epoch"].max()
+    else:
+        log.info(f"{symbol} no data found, might be delisted")
+        delisted = True
+        min_epoch = None
+        max_epoch = None
 
-            log.info(f"dolt table import -u {quote_meta_table_name} {csv_file}.meta.csv")
-            rc, _, _ = dolt_load_file(quote_meta_table_name, csv_file + ".meta.csv")
+    # save all results
+    _save_results(database, df, dolt_load, csv_file, clean, symbol, min_epoch, max_epoch, delisted, tz_info)
 
-            if rc != 0:
-                log.error(f"ERROR: load {csv_file}.meta.csv failed\n{out}\n{err}", exc_info=False)
-                raise ValueError(f"ERROR: load {csv_file}.meta.csv failed\n{out}\n{err}")
-
-            if clean:
-                try:
-                    if os.path.exists(csv_file): os.unlink(csv_file)
-                    os.unlink(f"{csv_file}.meta.csv")
-                except Exception as ignore:
-                    log.info("error unlinking file: " + csv_file, ignore)
-    except Exception as e:
-        log.error(f"ERROR for symbol: {symbol}, {e}", exc_info=1)
-        raise e
+    # just to return something to the executor
+    return symbol
 
 
-def _fetch_last_date(database, symbol, tz_info, verbose=False):
-    # check if price data is already available in database and what the latest date is
-    query = f""" 
-        select min(q.epoch) as min_epoch, max(q.epoch) as max_epoch, coalesce(qm.delisted, 0) as delisted
-          from {quote_table_name} q
-          left outer join {quote_meta_table_name} qm on qm.symbol = q.symbol 
-         where q.symbol='{symbol}'
-    """
+def _save_results(database, df, dolt_load,  csv_file, clean, symbol, min_epoch, max_epoch, delisted, tz_info):
+    # safe df
+    save_results(database, df, dolt_load, quote_table_name, csv_file, clean, index_columns=["symbol", "epoch"])
 
-    if verbose: log.info(query)
-
-    try:
-        res = fetch_rows(database, query, first_or_none=True)
-        if verbose: log.info(res)
-
-        has_valid_epoch = res is not None and "max_epoch" in res and res["max_epoch"] is not None
-        first_price_date = datetime.datetime.fromtimestamp(float(res["min_epoch"]), tz=tz_info) if has_valid_epoch else None
-        last_price_date = datetime.datetime.fromtimestamp(float(res["max_epoch"]), tz=tz_info) if has_valid_epoch else None
-        delisted = res['delisted'] if has_valid_epoch else 0
-        return first_price_date, last_price_date, int(delisted)
-    except Exception as e:
-        log.warn(f"{symbol}: last min/max epoch query failed, load full history: {e}")
-        return None, None, 0
+    # save metadata
+    save_results(
+        database,
+        pd.DataFrame(
+            [{
+                "symbol": symbol,
+                "min_epoch": min_epoch,
+                "max_epoch": max_epoch,
+                "delisted": int(delisted),
+                "tz_info": str(tz_info)
+            }]
+        ),
+        dolt_load,
+        quote_meta_table_name,
+        csv_file + ".meta.csv",
+        clean,
+        index_columns="symbol"
+    )
 
 
 if __name__ == '__main__':

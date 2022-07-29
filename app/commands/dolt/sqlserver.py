@@ -47,10 +47,12 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
             sql_server = subprocess.Popen(dolt_sql_server_command)
             sleep(1)
 
-            print("server started")
             sub_command_splitter = shlex.shlex(and_exec, posix=True)
             sub_command_splitter.whitespace_split = True
-            res = subprocess.run(list(sub_command_splitter))
+            sub_command = list(sub_command_splitter)
+
+            print(f"server started, execute sub command {sub_command}")
+            res = subprocess.run(sub_command)
             rc = res.returncode
             sql_server.kill()
         else:

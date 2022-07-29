@@ -48,7 +48,7 @@ def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200,
     log.info(f"execute query: {query}")
     if database.startswith('mysql+pymysql://'):
         log.info(f"use local server {database} instead of http requests")
-        return pd.read_sql(query, database)
+        return pd.read_sql(query, database).reset_index()
     else:
         query += '\nlimit {offset}, {limit}'
         url = 'https://dolthub.com/api/v1alpha1/' + database + '/main?q='
