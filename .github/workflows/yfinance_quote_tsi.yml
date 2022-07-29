@@ -12,7 +12,6 @@ env:
 jobs:
   tsi_quotes:
     uses: adagrad/findb_dolthub/.github/workflows/yfinance_quote_generic.yml@latest
-    needs: fetch_quotes
     secrets: inherit
     with:
       branch: "yfinance/quote/tsi/${{ github.run_id }}-${{ github.run_attempt }}"
