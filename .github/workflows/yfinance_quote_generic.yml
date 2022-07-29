@@ -35,7 +35,7 @@ jobs:
 
       - name: lookup new symbols
         id: fetch_quotes
-        uses: adagrad/findb_dolthub@test
+        uses: adagrad/findb_dolthub@latest
         with:
           # TODO later we want to have symbols and metadata in the "schema" branch where we can do this lightweight action
           #args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ inputs.branch }} --force-clone --and-exec \"fin-get yfinance quote -d 'mysql+pymysql://root:@localhost/findb' -w \\\"${{ inputs.where }}\\\" --time ${{ inputs.time }} --dolt-load\""
@@ -43,7 +43,7 @@ jobs:
 
       - name: push new symbols
         id: push_symbols
-        uses: adagrad/findb_dolthub@test
+        uses: adagrad/findb_dolthub@latest
         with:
           args: "dolt push -a -m '${{ input.commit_message }}'"
 
@@ -53,6 +53,6 @@ jobs:
     name: Merge branch into main
     steps:
       - name: merge into main
-        uses: adagrad/findb_dolthub@test
+        uses: adagrad/findb_dolthub@latest
         with:
           args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ inputs.branch }} -t main -m '${{ inputs.commit_message }}' --theirs -p --delete-source"

@@ -2,4 +2,4 @@ name: 'Findb Action'
 description: 'Fetch and load actions for findb'
 runs:
   using: 'docker'
-  image: docker://ghcr.io/adagrad/finget:test
+  image: docker://ghcr.io/adagrad/finget:latest
