@@ -2,9 +2,9 @@ name: "Find New Symbols"
 
 on:
   workflow_dispatch:
-  #schedule:
-  #  # run every other day
-  #  - cron: "0 12 */2 * *"
+  schedule:
+    # run every other day
+    - cron: "0 12 */2 * *"
 
 env:
   REPO: adagrad
@@ -14,7 +14,7 @@ env:
   DOLT_BRANCH_SYMBOL: "yfinance/symbol/${{ github.run_id }}-${{ github.run_attempt }}"
   DOLT_BRANCH_INFO: "yfinance/info/${{ github.run_id }}-${{ github.run_attempt }}"
   DOLT_COMMIT_MESSAGE: "add-new-symbols"
-  RUNTIME: 30
+  RUNTIME: 300
 
 jobs:
   search_symbols:
@@ -64,7 +64,7 @@ jobs:
       - name: push new symbols
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "dolt push -a yfinance_symbol -m '${{ env.DOLT_COMMIT_MESSAGE }}'"
+          args: "dolt push -a _symbol -m update-meta-data"
 
   simulate_pr_merge_info:
     needs: update_info

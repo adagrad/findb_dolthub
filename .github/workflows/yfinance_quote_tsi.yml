@@ -16,6 +16,6 @@ jobs:
     secrets: inherit
     with:
       branch: "${{ env.DOLT_BRANCH }}"
-      where: "exchange='PNK'"
+      where: "exchange='TSI'"
       time: 15
       commit_message: add_quotes_tsi
