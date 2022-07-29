@@ -1,0 +1,30 @@
+name: "Test Backticks"
+
+on:
+  workflow_dispatch:
+  #schedule:
+  #  # run every other day
+  #  - cron: "0 12 */2 * *"
+
+env:
+  REPO: adagrad
+  DATABASE: findb
+  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
+  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
+  DOLT_BRANCH_SYMBOL: "yfinance/symbol/${{ github.run_id }}-${{ github.run_attempt }}"
+  DOLT_BRANCH_INFO: "yfinance/info/${{ github.run_id }}-${{ github.run_attempt }}"
+  DOLT_COMMIT_MESSAGE: "add-new-symbols"
+  RUNTIME: 30
+
+jobs:
+
+  update_meta_tables:
+    # needs: simulate_pr_merge_symbol
+    runs-on: ubuntu-latest
+    name: Update meta table with newest symbols
+    steps:
+      - name: update _symbol
+        uses: adagrad/findb_dolthub@test
+        with:
+          args: "dolt sql -d adagrad/findb --force-clone -b schema -q \"insert into _symbol select distinct symbol, 'yfinance' from `findb/main`.yfinance_symbol ys where not exists (select 1 from _symbol s where s.symbol = ys.symbol and s.source = 'yfinance');\" -p"
+
