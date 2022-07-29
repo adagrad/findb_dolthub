@@ -15,7 +15,7 @@ jobs:
     needs: fetch_quotes
     secrets: inherit
     with:
-      branch: "${{ env.DOLT_BRANCH }}"
+      branch: "yfinance/quote/tsi/${{ github.run_id }}-${{ github.run_attempt }}"
       where: "exchange='TSI'"
       time: 15
       commit_message: add_quotes_tsi
