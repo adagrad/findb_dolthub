@@ -45,7 +45,7 @@ jobs:
         id: push_symbols
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "dolt push -a -m '${{ input.commit_message }}'"
+          args: "dolt push -a -m '${{ inputs.commit_message }}'"
 
   simulate_pr_merge:
     needs: fetch_quotes
