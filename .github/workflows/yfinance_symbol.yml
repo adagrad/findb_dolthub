@@ -21,7 +21,7 @@ jobs:
       - name: lookup new symbols
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "fin-get yfinance symbol --time ${{ env.RUNTIME }}"
+          args: "yfinance symbol --time ${{ env.RUNTIME }}"
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
@@ -40,7 +40,7 @@ jobs:
 #      - name: lookup info details
 #        uses: adagrad/findb_dolthub@latest
 #        with:
-#          args: "fin-get yfinance info --time ${{ env.RUNTIME }}"
+#          args: "yfinance info --time ${{ env.RUNTIME }}"
 #
 #      - name: 'Build:dockerimage'
 #        uses: docker/build-push-action@v1
