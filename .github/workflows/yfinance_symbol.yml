@@ -26,6 +26,8 @@ jobs:
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
         with:
+          context: .
+          push: true
           registry: ghcr.io
           username: "adagrad"
           password: ${{ secrets.GHCR }}
