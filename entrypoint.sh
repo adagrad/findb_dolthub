@@ -9,7 +9,7 @@ pwd
 
 # puke out hidden state
 cp /fin.meta.db.sqlite .
-ls -l  fin.meta.db.sqlite
+ls -l
 
 # run command
 fin-get "$@"

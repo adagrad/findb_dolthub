@@ -7,7 +7,7 @@ on:
     - cron: "0 12 */2 * *"
 
 env:
-  RUNTIME: 5
+  RUNTIME: 2
 
 jobs:
   search_symbols:
