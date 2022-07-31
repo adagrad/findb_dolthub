@@ -72,12 +72,11 @@ def cli(repo_database, force_clone, force_init, branch, feature_branch, add_chan
 
     if push:
         print(f"add and push changes made to the branch {dolt_current_branch()}")
+        dolt_push(add_changes.split(" ") if add_changes else None, and_exec if and_exec is not None else "add changes from server run")
 
         if rc != 0:
             print(f"ERROR The last command exited with rc: {rc}")
             exit(rc)
-
-        dolt_push(add_changes.split(" "), and_exec if and_exec is not None else "add changes from server run")
 
 
 if __name__ == '__main__':

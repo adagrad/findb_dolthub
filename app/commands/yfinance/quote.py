@@ -75,16 +75,16 @@ def download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_l
 def _select_last_state(database, include_new_symbols=False):
     if include_new_symbols:
         query = """
-            select s.symbol, q.first_quote_epoch, q.last_quote_epoch, e.timezone as tz_info, coalesce(q.delisted, 0) as delisted 
+            select s.symbol, q.first_quote_epoch, q.last_quote_epoch, e.timezone as tz_info, coalesce(q.delisted, 0) as delisted, q.volume 
               from `findb/main`.yfinance_symbol s
-              join `findb/main`.tzinfo_exchange e on e.symbol = s.exchange
+              join `findb/main`.yfinance_exchange_info e on e.symbol = s.exchange
               left outer join _quote q on q.symbol = s.symbol and q.source = 'yfinance'
              where (q.last_quote_epoch is null or q.last_quote_epoch < unix_timestamp(date_sub(curdate(), interval 1 day)))
              order by last_quote_epoch is null desc, last_quote_epoch asc
         """
     else:
         query = """
-            select first_quote_epoch, last_quote_epoch, tz_info, delisted 
+            select symbol, first_quote_epoch, last_quote_epoch, tz_info, delisted, volume 
               from _quote
              where (last_quote_epoch is null or last_quote_epoch < unix_timestamp(date_sub(curdate(), interval 1 day)))
              order by last_quote_epoch is null desc, last_quote_epoch asc
@@ -140,9 +140,6 @@ def _fetch_data(database, last_state, path='.', dolt_load=False, early_exit=None
         if "Stock Splits" not in df.columns:
             log.warn("Add missing column Stock Splits")
             df["Stock Splits"] = None
-
-        # insert timezone from exchange
-        df.insert(0, "tzinfo", str(tz_info))
 
         # convert date to float
         df.insert(0, "epoch", df.index.to_series().apply(lambda x: x.tz_localize(tz_info).to_pydatetime().timestamp()))

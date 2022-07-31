@@ -65,8 +65,8 @@ def save_results(repo_database, df, load_into_dolt, table_name=None, csvfile=Non
             rc, std, err = dolt_load_file(table_name, csvfile)
             if rc != 0: raise IOError(std + '\n' + err)
 
-            if clear_afterwards:
-                try:
-                    os.unlink(csvfile)
-                except Exception as e:
-                    log.error(f"failed to delete file {csvfile}", e)
+        if clear_afterwards:
+            try:
+                os.unlink(csvfile)
+            except Exception as e:
+                log.error(f"failed to delete file {csvfile}", e)

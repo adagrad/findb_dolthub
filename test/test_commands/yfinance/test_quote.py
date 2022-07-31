@@ -1,55 +1,36 @@
-import datetime
-import io
+import os
 import os
 import tempfile
 from unittest import TestCase
 
 import pandas as pd
-import yfinance as yf
-import contextlib
-from commands.yfinance.quote import _fetch_data, _fetch_last_date
+
+from commands.yfinance.quote import _fetch_data, download_parallel
 
 
 class TestQuote(TestCase):
 
     def test__fetch_data(self):
+        last_state = pd.DataFrame([
+            {"symbol": "AAPL", "first_quote_epoch": None, "last_quote_epoch": None, "tz_info": 'US/Eastern', "delisted": 0},
+            {"symbol": "MSFT", "first_quote_epoch": None, "last_quote_epoch": None, "tz_info": None, "delisted": 0},
+            {"symbol": "XXXXXXXXX", "first_quote_epoch": None, "last_quote_epoch": None, "tz_info": None, "delisted": 0},
+        ])
+
         with tempfile.TemporaryDirectory() as tmp:
-            _fetch_data("adagrad/findb", 'AAPL', path=tmp, dolt_load=False, max_runtime=None)
+            download_parallel(None, last_state, None, tmp, False, False, 2)
+            self.assertTrue(os.path.exists(os.path.join(tmp, "AAPL.csv")), "AAPL.csv exists")
+            self.assertTrue(os.path.exists(os.path.join(tmp, "AAPL.csv.meta.csv")), "AAPL.csv meta exists")
+            self.assertTrue(os.path.exists(os.path.join(tmp, "MSFT.csv")), "MSFT.csv exists")
+            self.assertTrue(os.path.exists(os.path.join(tmp, "MSFT.csv.meta.csv")), "MSFT.csv meta exists")
+            self.assertTrue(os.path.exists(os.path.join(tmp, "XXXXXXXXX.csv")), "XXXXXXXXX.csv exists")
+            self.assertTrue(os.path.exists(os.path.join(tmp, "XXXXXXXXX.csv.meta.csv")), "XXXXXXXXX.csv meta exists")
+
             df = pd.read_csv(os.path.join(tmp, 'AAPL.csv'))
             self.assertGreater(len(df), 0)
 
-        with tempfile.TemporaryDirectory() as tmp:
-            _fetch_data("adagrad/findb", ('AAPL', 'America/New_York'), path=tmp, dolt_load=False, max_runtime=None)
-            df=pd.read_csv(os.path.join(tmp, 'AAPL.csv'))
-            self.assertGreater(len(df), 0)
-            self.assertEqual(df["tzinfo"].iloc[0], 'America/New_York')
+            df = pd.read_csv(os.path.join(tmp, 'AAPL.csv.meta.csv'))
+            self.assertEqual(len(df), 1)
 
-    def test__fetch_last_date(self):
-        res = _fetch_last_date("adagrad/findb", "AAPL", None)
-        self.assertIsNotNone(res)
-        self.assertIsInstance(res[0], datetime.datetime)
-
-    def test_symbol_delisted(self):
-        "No data found, symbol may be delisted"
-
-        with io.StringIO() as output:
-            with contextlib.redirect_stdout(output):
-                yf.Ticker("VTA").history()
-
-            self.assertTrue("No data found, symbol may be delisted" in output.getvalue())
-
-    def test_os_out(self):
-        with io.StringIO() as output:
-            with contextlib.redirect_stdout(output):
-                os.system("ls -l")
-
-            print(output.getvalue())
-
-    def test_debugging(self):
-        print(_fetch_last_date("adagrad/findb", "AAAWX", None, verbose=True))
-        """
-        ./AAMBFX.csv
-            Warning: There are fewer columns in the import file's schema than the table's schema.
-                If unintentional, check for any typos in the import file's header.
-                Rows Processed: 0, Additions: 0, Modifications: 0, Had No Effect: 0
-        """
+            df = pd.read_csv(os.path.join(tmp, 'XXXXXXXXX.csv.meta.csv'))
+            self.assertEqual(len(df), 1)
