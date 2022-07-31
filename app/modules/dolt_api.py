@@ -2,38 +2,15 @@ import logging
 import os
 import random
 import subprocess
-import urllib.parse
 from threading import Lock
-from typing import Tuple, Iterable
+from typing import Tuple
 
 import pandas as pd
-from request_boost import boosted_requests
 
 threadlock = Lock()
 symbol_table_name = 'yfinance_symbol'
-tz_info_table_name = 'tzinfo_exchange'
+tz_info_table_name = 'yfinance_exchange_info'
 log = logging.getLogger(__name__)
-
-
-def fetch_symbols(database, where=None, max_retries=4, nr_jobs=5, page_size=200, max_batches=999999, with_timezone=False):
-    join_tz = (', tz.timezone', f'left outer join {tz_info_table_name} tz on tz.symbol = s.exchange') if with_timezone else ('', '')
-    if where is None: where = "1=1"
-
-    query = f"""
-        select s.symbol{join_tz[0]}
-          from {symbol_table_name} s
-          {join_tz[1]}
-          where {where} 
-          order by s.symbol
-    """
-
-    existing_symbols = []
-    results = execute_query(database, query, max_batches, nr_jobs, page_size, max_retries)
-
-    for _, r in results.iterrows():
-        existing_symbols.append((r['symbol'], r['timezone']) if with_timezone else r['symbol'])
-
-    return existing_symbols
 
 
 def fetch_rows(database, query, first_or_none=False):
@@ -46,35 +23,7 @@ def fetch_rows(database, query, first_or_none=False):
 
 def execute_query(database, query, max_batches=999999, nr_jobs=5, page_size=200, max_retries=4, **kwargs):
     log.info(f"execute query: {query}")
-    if database.startswith('mysql+pymysql://'):
-        log.info(f"use local server {database} instead of http requests")
-        return pd.read_sql(query, database).reset_index()
-    else:
-        query += '\nlimit {offset}, {limit}'
-        url = 'https://dolthub.com/api/v1alpha1/' + database + '/main?q='
-        log.info(f"use the dolthub hosted database over the rest api: {url}")
-        offset = page_size * nr_jobs
-        pages = [(x * page_size, x * page_size + page_size) for x in range(nr_jobs)]
-        all_rows = []
-        done = False
-
-        for i in range(max_batches):
-            urls = [url + urllib.parse.quote(query.format(**kwargs, offset=p[0] + i * offset, limit=p[1] + i * offset)) for p in pages]
-            log.info(f"submit batch {i} of batch size {page_size} {urls}")
-            responses = boosted_requests(urls=urls, no_workers=nr_jobs, max_tries=max_retries, timeout=999, parse_json=True, verbose=False)
-
-            assert all([r['query_execution_status'] != 'Error' for r in responses]), "\n".join([r['query_execution_message'] for r in responses])
-            if any([len(r['rows']) < page_size for r in responses]):
-                done = True
-
-            results = [row for r in responses if 'rows' in r and len(r['rows']) > 0 for row in r['rows']]
-            all_rows.extend(results)
-
-            # check if we have a full last batch
-            if done: break
-
-        log.info(f"submitted {i} batches found {len(all_rows)}")
-        return pd.DataFrame(all_rows)
+    return pd.read_sql(query, database).reset_index()
 
 
 #

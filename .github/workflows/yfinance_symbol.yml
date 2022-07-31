@@ -7,13 +7,6 @@ on:
     - cron: "0 12 */2 * *"
 
 env:
-  REPO: adagrad
-  DATABASE: findb
-  DOLTHUB_SECRET_JWT: ${{ secrets.DOLTHUB_SECRET_JWT }}
-  DOLTHUB_SECRET: ${{ secrets.DOLTHUB_SECRET }}
-  DOLT_BRANCH_SYMBOL: "yfinance/symbol/${{ github.run_id }}-${{ github.run_attempt }}"
-  DOLT_BRANCH_INFO: "yfinance/info/${{ github.run_id }}-${{ github.run_attempt }}"
-  DOLT_COMMIT_MESSAGE: "add-new-symbols"
   RUNTIME: 300
 
 jobs:
@@ -21,57 +14,39 @@ jobs:
     runs-on: ubuntu-latest
     name: A job to look for new symbols
     steps:
+
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+
       - name: lookup new symbols
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone --and-exec \"fin-get yfinance symbol -d 'mysql+pymysql://root:@localhost/findb' --time ${{ env.RUNTIME }} --dolt-load\""
+          args: "fin-get yfinance symbol --time ${{ env.RUNTIME }}"
 
-      - name: push new symbols
-        uses: adagrad/findb_dolthub@latest
+      - name: 'Build:dockerimage'
+        uses: docker/build-push-action@v1
         with:
-          args: "dolt push -a yfinance_symbol -m '${{ env.DOLT_COMMIT_MESSAGE }}'"
-
-  simulate_pr_merge_symbol:
-    needs: search_symbols
-    runs-on: ubuntu-latest
-    name: Merge remote branch into main
-    steps:
-      - name: merge into main
-        uses: adagrad/findb_dolthub@latest
-        with:
-          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_SYMBOL }} --force-clone -t main -m '${{ env.DOLT_COMMIT_MESSAGE }}' --theirs --delete-source -p"
-
-  update_meta_tables:
-    needs: simulate_pr_merge_symbol
-    runs-on: ubuntu-latest
-    name: Update meta table with newest symbols
-    steps:
-      - name: update _symbol
-        uses: adagrad/findb_dolthub@latest
-        with:
-          args: "dolt sql -d adagrad/findb --force-clone -b schema -q \"insert into _symbol select distinct symbol, 'yfinance' from `findb/main`.yfinance_symbol ys where not exists (select 1 from _symbol s where s.symbol = ys.symbol and s.source = 'yfinance');\" -p"
+          registry: ghcr.io
+          username: "adagrad"
+          password: ${{ secrets.GHCR }}
+          repository: adagrad/findb_dolthub
+          tags: latest
 
   update_info:
-    needs: simulate_pr_merge_symbol
+    needs: search_symbols
     runs-on: ubuntu-latest
     name: A job to look for detailed infos for new symbols
     steps:
       - name: lookup info details
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "dolt sqlserver -d ${{ env.REPO }}/${{ env.DATABASE }} -b main -f ${{ env.DOLT_BRANCH_INFO }} --force-clone --and-exec \"fin-get yfinance info -d 'mysql+pymysql://root:@localhost/findb' --time ${{ env.RUNTIME }} --dolt-load\""
+          args: "fin-get yfinance info --time ${{ env.RUNTIME }}"
 
-      - name: push new symbols
-        uses: adagrad/findb_dolthub@latest
+      - name: 'Build:dockerimage'
+        uses: docker/build-push-action@v1
         with:
-          args: "dolt push -a _symbol -m update-meta-data"
-
-  simulate_pr_merge_info:
-    needs: update_info
-    runs-on: ubuntu-latest
-    name: Merge remote branch into main
-    steps:
-      - name: merge into main
-        uses: adagrad/findb_dolthub@latest
-        with:
-          args: "dolt merge -d ${{ env.REPO }}/${{ env.DATABASE }} -s ${{ env.DOLT_BRANCH_INFO }} --force-clone -t main -m '${{ env.DOLT_COMMIT_MESSAGE }}' --theirs --delete-source -p"
+          registry: ghcr.io
+          username: "adagrad"
+          password: ${{ secrets.PAT }}
+          repository: adagrad/findb_dolthub
+          tags: latest

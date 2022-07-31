@@ -1,0 +1,17 @@
+name: "Get new Test quotes (testable)"
+
+on:
+  workflow_dispatch:
+  #schedule:
+  #  # run once a week
+  #  - cron: "0 6 * * 2"
+
+jobs:
+  tsi_quotes:
+    uses: adagrad/findb_dolthub/.github/workflows/yfinance_quote_generic.yml@latest
+    secrets: inherit
+    with:
+      branch: "yfinance/quote/test/${{ github.run_id }}-${{ github.run_attempt }}"
+      time: 15
+      commit_message: add_quotes_test
+

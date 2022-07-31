@@ -14,9 +14,10 @@ import requests
 
 from modules.df_utils import df_to_csv, save_results
 from modules.disk_utils import check_disk_full
-from modules.dolt_api import fetch_symbols, dolt_load_file, fetch_rows, dolt_push as execute_dolt_push
+from modules.dolt_api import fetch_rows
 from modules.requests_session import RequestsSession
 
+# -rw-rw-r-- 1 kic kic 235M Jul 31 14:36 fin.meta.db.sqlite
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 max_errors = 10
@@ -46,26 +47,24 @@ class YFSession(RequestsSession):
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-r', '--resume', type=str, default=None, help='Symbols file to resume from a left session')
 @click.option('-o', '--output', type=str, default="yfsymbols.csv", help='Filename holding the results, appends if exists (default=yfsymbols.csv)')
-@click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
+@click.option('-d', '--database', type=str, default="sqlite:///fin.meta.db.sqlite", help='database connection string containing schema and data')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
-@click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
-@click.option('--dolt-push', default=False, is_flag=True, help='Push dolt database changes to remote branch')
 @click.option('--no-ease', default=False, is_flag=True, help='Don\'t sleep between http search calls' )
-@click.option('--tor-socks-port', default=None, type=int, help='Tor scks port to access yfinance via TOR')
+@click.option('--tor-socks-port', default=None, type=int, help='Tor socks port to access yfinance via TOR')
 @click.option('--tor-control-port', default=None, type=int, help='Tor control port to reset exit IP')
 @click.option('--tor-control-password', default="password", type=str, help='Tor control password to reset exit IP')
 @click.option('--retries', type=int, default=4, help='Maximum number of retries (default=4)')
-def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_only, dolt_load, dolt_push, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
+def cli(time, resume, output, database, known_symbols, fetch_known_symbols_only, no_ease, tor_socks_port, tor_control_port, tor_control_password, retries):
     started = datetime.now()
     max_runtime = datetime.now() + timedelta(minutes=time) if time is not None else None
     print(f"started at: {started}, write results to {os.path.abspath(output)} run until: {max_runtime}")
 
     # get maximum lengh of symbols
-    max_symbol_length = _get_max_symbol_length(repo_database)
+    max_symbol_length = _get_max_symbol_length(database)
 
     # get starting sets of symbols
-    existing_symbols, possible_symbols = _get_symbol_sets(known_symbols, repo_database, resume, retries)
+    existing_symbols, possible_symbols = _get_symbol_sets(known_symbols, database, resume, retries)
     print(f"fetched last state {len(existing_symbols)} symbols in {(datetime.now() - started).seconds / 60} minutes")
     _save_symbols(existing_symbols, output + ".existing.symbols")
 
@@ -87,11 +86,8 @@ def cli(time, resume, output, repo_database, known_symbols, fetch_known_symbols_
         early_exit,
         yf_session,
         output,
-        lambda df, output: save_results(repo_database, df, dolt_load, table_name, output, False, index_columns=["symbol", "exchange", "type"])
+        lambda df, output: save_results(database, df, True, table_name, output, False, index_columns=["symbol", "exchange", "type"])
     )
-
-    if dolt_push:
-        execute_dolt_push([table_name], "add yf symbol")
 
 
 def _look_for_new_symbols(possible_symbols, existing_symbols, max_symbol_length, retries, ease, early_exit, yf_session, output, callback=lambda df, output: df_to_csv(df, output)):
@@ -167,7 +163,7 @@ def _get_symbol_sets(known_symbols_file, repo_database, resume_file, max_dolt_fe
 
 
 def _fetch_existing_symbols(database, max_retries=4, nr_jobs=4, page_size=200, max_batches=999999):
-    return fetch_symbols(database, max_retries=max_retries, nr_jobs=nr_jobs, page_size=page_size, max_batches=max_batches)
+    return fetch_rows(database, f'select symbol from {table_name}')["symbol"]
 
 
 def _get_max_symbol_length(repo_database, default_value=21):

@@ -10,7 +10,7 @@ from yfinance import Ticker
 
 from modules.df_utils import save_results
 from modules.disk_utils import check_disk_full
-from modules.dolt_api import fetch_rows, dolt_push as execute_dolt_push
+from modules.dolt_api import fetch_rows
 from modules.log import get_logger
 
 if not hasattr(sys.modules[__name__], '__file__'):
@@ -32,10 +32,8 @@ max_errors = 50
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-o', '--output', type=str, default="yfinfo.csv", help='Filename holding the results, appends if exists (default=yfinfo.csv)')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
-@click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
-@click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
-@click.option('--dolt-push', default=False, is_flag=True, help='Push dolt database changes to remote branch')
-def cli(time, output, repo_database, known_symbols, dolt_load, dolt_push):
+@click.option('-d', '--database', type=str, default="sqlite:///fin.meta.db.sqlite", help='database connection string containing schema and data')
+def cli(time, output, database, known_symbols):
     started = datetime.now()
     max_runtime = datetime.now() + timedelta(minutes=time) if time is not None else None
     output = os.path.abspath(output)
@@ -43,17 +41,14 @@ def cli(time, output, repo_database, known_symbols, dolt_load, dolt_push):
     log.info(f"started at: {started}, write results to {os.path.abspath(output)} run until: {max_runtime}")
 
     # get starting sets of symbols
-    symbols_for_info = _get_symbol_sets(known_symbols, repo_database)
+    symbols_for_info = _get_symbol_sets(known_symbols, database)
 
     def early_exit():
         return (time is not None and datetime.now() >= max_runtime) or check_disk_full(output)
 
     # fetch info
     log.info(f"fetch info for {len(symbols_for_info)} symbols")
-    _fetch_info(symbols_for_info, dolt_load, repo_database, output, early_exit)
-
-    if dolt_push:
-        execute_dolt_push([info_table_name], "add yf symbol info")
+    _fetch_info(symbols_for_info, database, output, early_exit)
 
 
 def _get_symbol_sets(known_symbols_file, repo_database, **kwargs):
@@ -71,7 +66,7 @@ def _load_symbols(file):
     return [s.strip().upper() for s in open(file).readlines() if len(s.strip()) > 0]
 
 
-def _fetch_info(symbols, dolt_load=False, repo_database=None, csv_file=None, eary_exit=None):
+def _fetch_info(symbols, repo_database=None, csv_file=None, eary_exit=None):
     error_count = 0
     for s in symbols:
         log.info(f"get info for {s}")
@@ -87,7 +82,7 @@ def _fetch_info(symbols, dolt_load=False, repo_database=None, csv_file=None, ear
                 save_results(
                     repo_database,
                     _rename_columns(pd.DataFrame([info_dict])),
-                    dolt_load,
+                    True,
                     info_table_name,
                     csv_file,
                     False,
