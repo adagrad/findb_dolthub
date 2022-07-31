@@ -7,7 +7,7 @@ on:
     - cron: "0 12 */2 * *"
 
 env:
-  RUNTIME: 300
+  RUNTIME: 5
 
 jobs:
   search_symbols:
@@ -32,21 +32,21 @@ jobs:
           repository: adagrad/findb_dolthub
           tags: latest
 
-  update_info:
-    needs: search_symbols
-    runs-on: ubuntu-latest
-    name: A job to look for detailed infos for new symbols
-    steps:
-      - name: lookup info details
-        uses: adagrad/findb_dolthub@latest
-        with:
-          args: "fin-get yfinance info --time ${{ env.RUNTIME }}"
-
-      - name: 'Build:dockerimage'
-        uses: docker/build-push-action@v1
-        with:
-          registry: ghcr.io
-          username: "adagrad"
-          password: ${{ secrets.PAT }}
-          repository: adagrad/findb_dolthub
-          tags: latest
+#  update_info:
+#    needs: search_symbols
+#    runs-on: ubuntu-latest
+#    name: A job to look for detailed infos for new symbols
+#    steps:
+#      - name: lookup info details
+#        uses: adagrad/findb_dolthub@latest
+#        with:
+#          args: "fin-get yfinance info --time ${{ env.RUNTIME }}"
+#
+#      - name: 'Build:dockerimage'
+#        uses: docker/build-push-action@v1
+#        with:
+#          registry: ghcr.io
+#          username: "adagrad"
+#          password: ${{ secrets.PAT }}
+#          repository: adagrad/findb_dolthub
+#          tags: latest
