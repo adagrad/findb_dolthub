@@ -150,7 +150,15 @@ def _get_symbol_sets(known_symbols_file, repo_database, resume_file, max_dolt_fe
     known_symbols = None if known_symbols_file is None else _load_symbols(known_symbols_file)
     has_repo = len(repo_database) > 0 and "None" != repo_database
 
-    possible_symbols = [c for c in first_search_characters] if resume_file is None else _load_symbols(resume_file)  # TODO eventually read from database table?
+    possible_symbols = [c for c in first_search_characters]
+    if resume_file is not None:
+        res_symbols = _load_symbols(resume_file)
+        if len(res_symbols) > 0:
+            log.info(f"use resume file with {len(res_symbols)} searches")
+            possible_symbols = res_symbols
+        else:
+            log.warning("do not use resume file as it is empty")
+
     existing_symbols = known_symbols if known_symbols is not None else _fetch_existing_symbols(repo_database, max_dolt_fetch_retries, **kwargs) if has_repo > 0 else []
     existing_symbols = set([es.strip().upper() for es in existing_symbols])
     known_symbols = None

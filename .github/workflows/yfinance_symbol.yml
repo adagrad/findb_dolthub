@@ -22,6 +22,8 @@ jobs:
         uses: adagrad/findb_dolthub@latest
         with:
           args: "yfinance symbol --time ${{ env.RUNTIME }}"
+          # resume last session
+          # args: "yfinance symbol --time ${{ env.RUNTIME }}" -s yfsymbols.csv.existing.symbols -r yfsymbols.csv.possible.symbols
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
@@ -31,25 +33,28 @@ jobs:
           registry: ghcr.io
           username: "adagrad"
           password: ${{ secrets.GHCR }}
-          #repository: adagrad/findb_dolthub
           repository: adagrad/finget
           tags: latest
 
-#  update_info:
-#    needs: search_symbols
-#    runs-on: ubuntu-latest
-#    name: A job to look for detailed infos for new symbols
-#    steps:
-#      - name: lookup info details
-#        uses: adagrad/findb_dolthub@latest
-#        with:
-#          args: "yfinance info --time ${{ env.RUNTIME }}"
-#
-#      - name: 'Build:dockerimage'
-#        uses: docker/build-push-action@v1
-#        with:
-#          registry: ghcr.io
-#          username: "adagrad"
-#          password: ${{ secrets.PAT }}
-#          repository: adagrad/findb_dolthub
-#          tags: latest
+  update_info:
+    needs: search_symbols
+    runs-on: ubuntu-latest
+    name: A job to look for detailed infos for new symbols
+    steps:
+
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+
+      - name: lookup info details
+        uses: adagrad/findb_dolthub@latest
+        with:
+          args: "yfinance info --time ${{ env.RUNTIME }}"
+
+      - name: 'Build:dockerimage'
+        uses: docker/build-push-action@v1
+        with:
+          registry: ghcr.io
+          username: "adagrad"
+          password: ${{ secrets.GHCR }}
+          repository: adagrad/finget
+          tags: latest
