@@ -3,11 +3,10 @@ name: "Find New Symbols"
 on:
   workflow_dispatch:
   schedule:
-    # run every other day
-    - cron: "0 12 */2 * *"
+    - cron: "0 12 * * *"
 
 env:
-  RUNTIME: 2
+  RUNTIME: 300
 
 jobs:
   search_symbols:

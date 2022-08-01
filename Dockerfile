@@ -11,8 +11,7 @@ ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 RUN apt-get install -y default-mysql-client
 
-COPY fin.meta.db.sqlite /
-COPY yfsymbols.csv* /
+COPY fin.meta.db.sqlite *.csv /
 COPY entrypoint*.sh /
 ADD app /opt/
 
