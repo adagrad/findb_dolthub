@@ -31,7 +31,8 @@ jobs:
           registry: ghcr.io
           username: "adagrad"
           password: ${{ secrets.GHCR }}
-          repository: adagrad/findb_dolthub
+          #repository: adagrad/findb_dolthub
+          repository: adagrad/finget
           tags: latest
 
 #  update_info:
