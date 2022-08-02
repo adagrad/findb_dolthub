@@ -17,7 +17,7 @@ from modules.disk_utils import check_disk_full
 from modules.dolt_api import fetch_rows
 from modules.requests_session import RequestsSession
 
-# -rw-rw-r-- 1 kic kic 235M Jul 31 14:36 fin.meta.db.sqlite
+
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 max_errors = 10
@@ -47,7 +47,7 @@ class YFSession(RequestsSession):
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-r', '--resume', type=str, default=None, help='Symbols file to resume from a left session')
 @click.option('-o', '--output', type=str, default="yfsymbols.csv", help='Filename holding the results, appends if exists (default=yfsymbols.csv)')
-@click.option('-d', '--database', type=str, default="sqlite:///fin.meta.db.sqlite", help='database connection string containing schema and data')
+@click.option('-d', '--database', type=str, default="sqlite:///fin.db.sqlite", help='database connection string containing schema and data')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
 @click.option('--fetch-known-symbols-only', default=False, is_flag=True, help='Only saves the known symbols')
 @click.option('--no-ease', default=False, is_flag=True, help='Don\'t sleep between http search calls' )

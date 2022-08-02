@@ -32,7 +32,7 @@ max_errors = 50
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
 @click.option('-o', '--output', type=str, default="yfinfo.csv", help='Filename holding the results, appends if exists (default=yfinfo.csv)')
 @click.option('-s', '--known-symbols', type=str, default=None, help='Provide known symbols file instead of fetching them (one sybol per line)')
-@click.option('-d', '--database', type=str, default="sqlite:///fin.meta.db.sqlite", help='database connection string containing schema and data')
+@click.option('-d', '--database', type=str, default="sqlite:///fin.db.sqlite", help='database connection string containing schema and data')
 def cli(time, output, database, known_symbols):
     started = datetime.now()
     max_runtime = datetime.now() + timedelta(minutes=time) if time is not None else None

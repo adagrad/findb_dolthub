@@ -9,9 +9,9 @@ COPY torrc.default /etc/tor/torrc.default
 
 ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-RUN apt-get install -y default-mysql-client
+RUN apt-get install -y sqlite3 lrzip
 
-COPY fin.meta.db.sqlite *.csv /
+COPY fin.db.sqlite.lrz *.csv /
 COPY entrypoint*.sh /
 ADD app /opt/
 

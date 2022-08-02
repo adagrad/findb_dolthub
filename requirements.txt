@@ -6,6 +6,8 @@ beautifulsoup4
 cachier
 cchardet
 click
+dask
+duckdb
 fastparquet
 humanfriendly
 investpy
