@@ -1,11 +1,13 @@
 import logging
 import os
 import random
+from threading import Lock
 
 from sqlalchemy import create_engine
 
 from modules.dolt_api import dolt_load_file
 
+threadlock = Lock()
 log = logging.getLogger(__name__)
 engine = None
 
@@ -41,7 +43,14 @@ def df_to_sql_with_replace(df, table_name, db_conn):
     if len(df) > 0:
         with engine.connect() as connection:
             log.info(f"insert {len(df)} rows into {db_conn} {table_name}")
-            df.to_sql(table_name, connection, if_exists='append', method=mysql_replace_into)
+            try:
+                if "sqlite" in engine.url:
+                    threadlock.acquire()
+
+                df.to_sql(table_name, connection, if_exists='append', method=mysql_replace_into)
+            finally:
+                if threadlock.locked():
+                    threadlock.release()
 
 
 def save_results(repo_database, df, load_into_dolt, table_name=None, csvfile=None, clear_afterwards=False, index_columns=None):

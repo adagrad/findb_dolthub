@@ -18,6 +18,10 @@ source .env
 # provide a developer setting access token with everything granted under packages as password
 docker login ghcr.io -u adagrad -p "$GHCIO"
 
+# compress database file
+DBFILE=fin.db.sqlite
+lrzip -f -o "$DBFILE.lrz" "$DBFILE"
+
 # build container
 echo docker build -t finget:$TAG .
 docker build -t finget:$TAG .

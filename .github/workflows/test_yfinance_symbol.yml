@@ -55,3 +55,26 @@ jobs:
           password: ${{ secrets.GHCR }}
           repository: adagrad/finget
           tags: latest
+
+  update_quote:
+    needs: update_info
+    runs-on: ubuntu-latest
+    name: A job to update missing quotes
+    steps:
+
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+
+      - name: lookup info details
+        uses: adagrad/findb_dolthub@latest
+        with:
+          args: "yfinance quote -i 0 --include-new --time ${{ env.RUNTIME }} --clean"
+
+      - name: 'Build:dockerimage'
+        uses: docker/build-push-action@v1
+        with:
+          registry: ghcr.io
+          username: "adagrad"
+          password: ${{ secrets.GHCR }}
+          repository: adagrad/finget
+          tags: latest

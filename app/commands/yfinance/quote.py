@@ -15,7 +15,7 @@ from yfinance.utils import auto_adjust
 
 from modules.df_utils import df_to_csv, save_results
 from modules.disk_utils import check_disk_full
-from modules.dolt_api import fetch_symbols, fetch_rows, dolt_load_file
+from modules.dolt_api import fetch_rows
 from modules.log import get_logger
 from modules.threaded import execute_parallel
 
@@ -32,26 +32,25 @@ quote_table_name = 'yfinance_quote'
 
 @click.command()
 @click.option('-t', '--time', type=int, default=None, help='Maximum runtime in minutes')
-@click.option('-d', '--repo-database', type=str, default="adagrad/findb", help='Dolthub repository and database name (default=adagrad/findb)')
+@click.option('-d', '--database', type=str, default="sqlite:///fin.db.sqlite", help='database connection string containing schema and data')
 @click.option('-i', '--inactive', type=int, default=None, help='Whether only active (0)/inactive(1) or both (default) symbols should be fetched')
 @click.option('-o', '--output-dir', type=str, default='.', help='Path to store downloaded csv files')
 @click.option('-p', '--parallel-threads', type=int, default=10, help='Number of parallel threads')
 @click.option('-n', '--include-new', default=False, is_flag=True, help='Also look for symbols without any quote (need main branch to be present)')
-@click.option('--dolt-load', default=False, is_flag=True, help='Load file into local dolt database branch')
 @click.option('--clean', default=False, is_flag=True, help='Deletes intermediary files directly after load (only works together with --dolt-load)')
-def cli(time, repo_database, inactive, output_dir, parallel_threads, include_new, dolt_load, clean):
+def cli(time, database, inactive, output_dir, parallel_threads, include_new, clean):
     max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
-    if repo_database == "" or repo_database == "None":
-        repo_database = None
+    if database == "" or database == "None":
+        database = None
 
     log.info(f"select symbols where inactive = {inactive}")
-    last_state = _select_last_state(repo_database, include_new)
+    last_state = _select_last_state(database, include_new)
 
     if inactive is not None:
         last_state = last_state[last_state["delisted"] == inactive]
 
     log.info(f"found {len(last_state)} quotes to fetch prices for")
-    download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_load, clean, parallel_threads)
+    download_parallel(database, last_state, max_runtime, output_dir, True, clean, parallel_threads)
 
 
 def download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_load=False, clean=False, num_threads=4):
@@ -75,18 +74,18 @@ def download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_l
 def _select_last_state(database, include_new_symbols=False):
     if include_new_symbols:
         query = """
-            select s.symbol, q.first_quote_epoch, q.last_quote_epoch, e.timezone as tz_info, coalesce(q.delisted, 0) as delisted, q.volume 
-              from `findb/main`.yfinance_symbol s
-              join `findb/main`.yfinance_exchange_info e on e.symbol = s.exchange
-              left outer join _quote q on q.symbol = s.symbol and q.source = 'yfinance'
-             where (q.last_quote_epoch is null or q.last_quote_epoch < unix_timestamp(date_sub(curdate(), interval 1 day)))
-             order by last_quote_epoch is null desc, last_quote_epoch asc
+            select s.symbol, m.min_epoch as first_quote_epoch, m.max_epoch as last_quote_epoch, e.timezone as tz_info, coalesce(m.delisted, 0) as delisted, null as volume
+              from yfinance_symbol s
+              join yfinance_exchange_info e on e.symbol = s.exchange
+              left outer join yfinance_quote_meta m on m.symbol = s.exchange
+             where m.max_epoch is null or m.max_epoch < strftime('%s', date(current_date, '-1 days'))
+             order by m.max_epoch is null desc, m.max_epoch asc
         """
     else:
         query = """
-            select symbol, first_quote_epoch, last_quote_epoch, tz_info, delisted, volume 
-              from _quote
-             where (last_quote_epoch is null or last_quote_epoch < unix_timestamp(date_sub(curdate(), interval 1 day)))
+            select symbol, min_epoch as first_quote_epoch, max_epoch as last_quote_epoch, tz_info, delisted, null as volume
+              from yfinance_quote_meta
+             where (last_quote_epoch is null or last_quote_epoch < strftime('%s', date(current_date, '-1 days')))
              order by last_quote_epoch is null desc, last_quote_epoch asc
         """
 
@@ -102,7 +101,7 @@ def _fetch_data(database, last_state, path='.', dolt_load=False, early_exit=None
 
     # check eary exit
     if early_exit is not None and early_exit():
-        log.error(f"max time reached or disk almost full, exit before fetching {symbol}")
+        log.warning(f"max time reached or disk almost full, exit before fetching {symbol}")
         return f"skipped {symbol}"
 
     # parse dates
