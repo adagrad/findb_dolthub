@@ -7,7 +7,7 @@ import humanfriendly
 log = logging.getLogger(__name__)
 
 
-def check_disk_full(*paths, minimum="50MB"):
+def check_disk_full(*paths, minimum="4GB"):
     bytes_size = humanfriendly.parse_size(minimum) if isinstance(minimum, str) else minimum
 
     for path in [os.getcwd(), *paths]:
