@@ -6,7 +6,7 @@ on:
     - cron: "0 12 * * *"
 
 env:
-  RUNTIME: 300
+  RUNTIME: 270
 
 jobs:
   search_symbols:
@@ -23,6 +23,22 @@ jobs:
           args: "yfinance symbol --time ${{ env.RUNTIME }}"
           # resume last session
           # args: "yfinance symbol --time ${{ env.RUNTIME }}" -s yfsymbols.csv.existing.symbols -r yfsymbols.csv.possible.symbols
+
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: fin.db.sqlite.lrz
+          asset_name: fin.db.sqlite.lrz
+          tag: latest
+          overwrite: true
+          body: "Updated fin.db.sqlite.lrz"
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
@@ -49,6 +65,22 @@ jobs:
         with:
           args: "yfinance info --time ${{ env.RUNTIME }}"
 
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: fin.db.sqlite.lrz
+          asset_name: fin.db.sqlite.lrz
+          tag: latest
+          overwrite: true
+          body: "Updated fin.db.sqlite.lrz"
+
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
         with:
@@ -67,10 +99,26 @@ jobs:
       - name: "Build:checkout"
         uses: actions/checkout@v2
 
-      - name: lookup info details
+      - name: fetch new quotes
         uses: adagrad/findb_dolthub@latest
         with:
           args: "yfinance quote -i 0 --include-new --time ${{ env.RUNTIME }} --clean"
+
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: fin.db.sqlite.lrz
+          asset_name: fin.db.sqlite.lrz
+          tag: latest
+          overwrite: true
+          body: "Updated fin.db.sqlite.lrz"
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
