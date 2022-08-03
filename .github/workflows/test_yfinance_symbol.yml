@@ -144,6 +144,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: fin.db.sqlite.lrz.*
           tag: integration_test
           file_glob: true
           overwrite: true
