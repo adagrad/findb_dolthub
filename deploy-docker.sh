@@ -19,8 +19,8 @@ source .env
 docker login ghcr.io -u adagrad -p "$GHCIO"
 
 # compress database file
-echo lrzip --lzo -f -o fin.db.sqlite.lrz fin.$TAG.db.sqlite
-lrzip --lzo -f -o fin.db.sqlite.lrz fin.$TAG.db.sqlite
+#echo lrzip --lzo -f -o fin.db.sqlite.lrz fin.$TAG.db.sqlite
+#lrzip --lzo -f -o fin.db.sqlite.lrz fin.$TAG.db.sqlite
 
 # build container
 echo docker build -t finget:$TAG .
