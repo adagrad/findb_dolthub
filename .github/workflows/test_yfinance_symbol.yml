@@ -29,7 +29,6 @@ jobs:
           sudo apt-get install lrzip
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
 
-
       - name: lookup new symbols
         uses: adagrad/findb_dolthub@integration_test
         with:
@@ -73,6 +72,20 @@ jobs:
       - name: "Build:checkout"
         uses: actions/checkout@v2
 
+      - name: Download database from release
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: adagrad/findb_dolthub
+          version: tags/integration_test
+          file: fin.db.sqlite.lrz
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
+
       - name: lookup info details
         uses: adagrad/findb_dolthub@integration_test
         with:
@@ -111,6 +124,20 @@ jobs:
 
       - name: "Build:checkout"
         uses: actions/checkout@v2
+
+      - name: Download database from release
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: adagrad/findb_dolthub
+          version: tags/integration_test
+          file: fin.db.sqlite.lrz
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
 
       - name: fetch new quotes
         uses: adagrad/findb_dolthub@integration_test
