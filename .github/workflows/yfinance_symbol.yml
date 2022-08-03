@@ -6,7 +6,7 @@ on:
     - cron: "0 12 * * *"
 
 env:
-  RUNTIME: 270
+  RUNTIME: 240
 
 jobs:
   search_symbols:
@@ -100,6 +100,60 @@ jobs:
 
   update_quote:
     needs: update_info
+    runs-on: ubuntu-latest
+    name: A job to update missing quotes
+    steps:
+
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+
+      - name: Download database from release
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: adagrad/findb_dolthub
+          version: tags/latest
+          file: fin.db.sqlite.lrz
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
+
+      - name: fetch new quotes
+        uses: adagrad/findb_dolthub@latest
+        with:
+          args: "yfinance quote -i 0 --include-new --time ${{ env.RUNTIME }} --clean"
+
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: fin.db.sqlite.lrz
+          asset_name: fin.db.sqlite.lrz
+          tag: latest
+          overwrite: true
+          body: "Updated fin.db.sqlite.lrz"
+
+      - name: Upload binaries to release BACKUP
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: fin.db.sqlite.lrz
+          asset_name: fin.db.sqlite.lrz
+          tag: backup
+          overwrite: true
+          body: "Updated fin.db.sqlite.lrz"
+
+  update_quote_2:
+    needs: update_quote
     runs-on: ubuntu-latest
     name: A job to update missing quotes
     steps:

@@ -20,7 +20,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: mock.fin.db.sqlite.lrz
           asset_name: mock.fin.db.sqlite.lrz
-          tag: latest
+          tag: integration_test
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
