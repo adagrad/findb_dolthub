@@ -20,7 +20,7 @@ jobs:
       - name: Download database from release
         uses: robinraju/release-downloader@v1.4
         with:
-          tag: integration_test
+          tag: latest
           fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
@@ -69,7 +69,7 @@ jobs:
       - name: Download database from release
         uses: robinraju/release-downloader@v1.4
         with:
-          tag: integration_test
+          tag: latest
           fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
