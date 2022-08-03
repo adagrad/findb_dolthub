@@ -18,18 +18,16 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.4
         with:
-          repo: adagrad/findb_dolthub
-          version: tags/latest
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: integration_test
+          fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          ls -l
           cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
           rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
@@ -69,18 +67,16 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.4
         with:
-          repo: adagrad/findb_dolthub
-          version: tags/latest
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: integration_test
+          fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          ls -l
           cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
           rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
@@ -118,13 +114,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.4
         with:
-          repo: adagrad/findb_dolthub
-          version: tags/latest
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: latest
+          fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
@@ -177,13 +170,10 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
-        with:
-          repo: adagrad/findb_dolthub
-          version: tags/latest
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+        uses: robinraju/release-downloader@v1.4
+          with:
+            tag: latest
+            fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
