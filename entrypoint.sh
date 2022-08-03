@@ -6,7 +6,7 @@ set -e
 echo fin-get "$@"
 
 # puke out hidden state
-lrzip -f -d "/$FILE.lrz" -o "$FILE"
+lrzip -f -d /fin.db.sqlite.lrz -o fin.db.sqlite
 
 echo "current directory: `pwd`"
 ls -l
