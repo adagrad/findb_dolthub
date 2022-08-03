@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
 
 env:
-  RUNTIME: 2
+  USERNAME: ${{ secrets.MEGA_USERNAME }}
+  PASSWORD: ${{ secrets.MEGA_PASSWORD }}
 
 jobs:
   search_symbols:
@@ -21,6 +22,3 @@ jobs:
         uses: Difegue/action-megacmd@master
         with:
           args: put lala.pdf /lala2.pdf
-        env:
-          USERNAME: ${{ secrets.MEGA_USERNAME }}
-          PASSWORD: ${{ secrets.MEGA_PASSWORD }}
