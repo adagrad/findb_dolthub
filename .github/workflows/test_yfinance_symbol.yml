@@ -16,18 +16,16 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.4
         with:
-          repo: adagrad/findb_dolthub
-          version: tags/integration_test
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: integration_test
+          fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          ls -l
           cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
           rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
@@ -67,18 +65,16 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.4
         with:
-          repo: adagrad/findb_dolthub
-          version: tags/integration_test
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: integration_test
+          fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          ls -l
           cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
           rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
@@ -116,18 +112,16 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download database from release
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.4
         with:
-          repo: adagrad/findb_dolthub
-          version: tags/integration_test
-          file: fin.db.sqlite.lrz.*
-          regex: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: integration_test
+          fileName: "fin.db.sqlite.lrz.*"
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          ls -l
           cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
           rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
@@ -142,6 +136,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          ls -l
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
           split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
