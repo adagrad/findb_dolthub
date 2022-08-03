@@ -12,14 +12,31 @@ jobs:
 
       - name: simulate database
         run: |
-          echo "das ist ein test" > fin.db.sqlite.lrz
+          echo "das ist ein test" > mock.fin.db.sqlite.lrz
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: mock.fin.db.sqlite.lrz
+          asset_name: mock.fin.db.sqlite.lrz
           tag: integration_test
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
+
+  download_asset:
+    runs-on: ubuntu-latest
+    name: Test downloading a release asset
+    steps:
+
+      - name: Download binaries from release
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: adagrad/findb_dolthub
+          version: tags/integration_test
+          file: mock.fin.db.sqlite.lrz
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: show simulated database
+        run: |
+          ls -l mock.fin.db.sqlite.lrz
