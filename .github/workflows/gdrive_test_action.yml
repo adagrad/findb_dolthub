@@ -1,0 +1,44 @@
+name: "GDrive TEST Action"
+
+on:
+  workflow_dispatch:
+
+env:
+  RUNTIME: 2
+
+jobs:
+  search_symbols:
+    runs-on: ubuntu-latest
+    name: A job to look for new symbols
+    steps:
+
+    - name: Download from Google Drive
+      uses: satackey/action-google-drive@v1
+      with:
+        skicka-tokencache-json: ${{ secrets.SKICKA_TOKENCACHE_JSON }}
+        download-from: /path/to/download
+        download-to: ./
+
+        # For those who set up Google Drive API client ID and secret themselves
+        google-client-id: ${{ secrets.GOOGLE_CLIENT_ID }}
+        google-client-secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+
+      - name: Archive files
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip -l -i -f -o fin.db.sqlite.lrz fin.db.sqlite
+
+      - name: Upload to Google Drive
+        uses: satackey/action-google-drive@v1
+        with:
+          skicka-tokencache-json: ${{ secrets.SKICKA_TOKENCACHE_JSON }}
+          upload-from: ./
+          upload-to: /path/to/upload
+
+          # For those who set up Google Drive API client ID and secret themselves
+          google-client-id: ${{ secrets.GOOGLE_CLIENT_ID }}
+          google-client-secret: ${{ secrets.GOOGLE_CLIENT_SECRET }}
