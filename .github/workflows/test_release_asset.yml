@@ -12,7 +12,7 @@ jobs:
 
       - name: simulate database
         run: |
-          touch fin.db.sqlite.lrz
+          echo "das ist ein test" > fin.db.sqlite.lrz
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
