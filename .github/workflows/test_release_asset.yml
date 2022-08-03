@@ -40,4 +40,5 @@ jobs:
 
       - name: show simulated database
         run: |
-          ls -l mock.fin.db.sqlite.lrz
+          ls -l
+          test -f mock.fin.db.sqlite.lrz
