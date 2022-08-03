@@ -52,17 +52,6 @@ jobs:
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
-      - name: 'Build:dockerimage'
-        uses: docker/build-push-action@v1
-        with:
-          context: .
-          push: true
-          registry: ghcr.io
-          username: "adagrad"
-          password: ${{ secrets.GHCR }}
-          repository: adagrad/finget
-          tags: integration_test
-
   update_info:
     needs: search_symbols
     runs-on: ubuntu-latest
@@ -107,15 +96,6 @@ jobs:
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
-      - name: 'Build:dockerimage'
-        uses: docker/build-push-action@v1
-        with:
-          registry: ghcr.io
-          username: "adagrad"
-          password: ${{ secrets.GHCR }}
-          repository: adagrad/finget
-          tags: integration_test
-
   update_quote:
     needs: update_info
     runs-on: ubuntu-latest
@@ -159,12 +139,3 @@ jobs:
           tag: integration_test
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
-
-      - name: 'Build:dockerimage'
-        uses: docker/build-push-action@v1
-        with:
-          registry: ghcr.io
-          username: "adagrad"
-          password: ${{ secrets.GHCR }}
-          repository: adagrad/finget
-          tags: integration_test
