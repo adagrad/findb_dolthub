@@ -43,7 +43,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
-          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
+          split -b50M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
@@ -90,7 +90,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
-          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
+          split -b50M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
@@ -138,7 +138,7 @@ jobs:
           sudo apt-get install lrzip
           ls -l
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
-          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
+          split -b50M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
