@@ -16,11 +16,17 @@ jobs:
         uses: actions/checkout@v2
 
       - name: lookup new symbols
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@integration_test
         with:
           args: "yfinance symbol --time ${{ env.RUNTIME }}"
           # resume last session
           # args: "yfinance symbol --time ${{ env.RUNTIME }}" -s yfsymbols.csv.existing.symbols -r yfsymbols.csv.possible.symbols
+
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
@@ -43,9 +49,15 @@ jobs:
         uses: actions/checkout@v2
 
       - name: lookup info details
-        uses: adagrad/findb_dolthub@latest
+        uses: adagrad/findb_dolthub@integration_test
         with:
           args: "yfinance info --time ${{ env.RUNTIME }}"
+
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1
@@ -65,10 +77,16 @@ jobs:
       - name: "Build:checkout"
         uses: actions/checkout@v2
 
-      - name: lookup info details
-        uses: adagrad/findb_dolthub@latest
+      - name: fetch new quotes
+        uses: adagrad/findb_dolthub@integration_test
         with:
           args: "yfinance quote -i 0 --include-new --time ${{ env.RUNTIME }} --clean"
+
+      - name: Archive database
+        run: |
+          sudo apt-get update
+          sudo apt-get install lrzip
+          lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
 
       - name: 'Build:dockerimage'
         uses: docker/build-push-action@v1

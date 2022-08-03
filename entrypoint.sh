@@ -6,14 +6,7 @@ set -e
 echo fin-get "$@"
 
 # puke out hidden state
-FILE=fin.db.sqlite
-if [ -f "$FILE" ]; then
-    echo "WARNING sqlite $FILE already exists, do nothing!"
-else
-    echo "export hidden state file $FILE"
-    # cp -u /fin.meta.db.sqlite .
-    lrzip -d "/$FILE.lrz" -o "$FILE"
-fi
+lrzip -f -d "/$FILE.lrz" -o "$FILE"
 
 echo "current directory: `pwd`"
 ls -l
@@ -23,5 +16,6 @@ echo run command: "$@"
 fin-get "$@"
 
 # compress back hidden state
-echo compress back for import as hidden state
-lrzip -o "$FILE.lrz" "$FILE"
+# echo compress back for import as hidden state
+# lrzip -l -i -f -o "$FILE.lrz" "$FILE"
+# lrzip --level 5 -i -f -o "$FILE.lrz" "$FILE"
