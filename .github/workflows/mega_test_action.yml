@@ -1,0 +1,26 @@
+name: "Mega TEST Action"
+
+on:
+  workflow_dispatch:
+
+env:
+  RUNTIME: 2
+
+jobs:
+  search_symbols:
+    runs-on: ubuntu-latest
+    name: A job to look for new symbols
+    steps:
+
+      - name: Download
+        uses: Difegue/action-megacmd@master
+        with:
+          args: get /lala.pdf lala.pdf
+
+      - name: Upload to MEGA
+        uses: Difegue/action-megacmd@master
+        with:
+          args: put lala.pdf /lala2.pdf
+        env:
+          USERNAME: ${{ secrets.MEGA_USERNAME }}
+          PASSWORD: ${{ secrets.MEGA_PASSWORD }}
