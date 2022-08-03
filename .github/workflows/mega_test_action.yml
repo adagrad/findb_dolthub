@@ -3,10 +3,6 @@ name: "Mega TEST Action"
 on:
   workflow_dispatch:
 
-env:
-  USERNAME: ${{ secrets.MEGA_USERNAME }}
-  PASSWORD: ${{ secrets.MEGA_PASSWORD }}
-
 jobs:
   search_symbols:
     runs-on: ubuntu-latest
@@ -17,6 +13,9 @@ jobs:
         uses: Difegue/action-megacmd@master
         with:
           args: get /lala.pdf lala.pdf
+        env:
+          USERNAME: ${{ secrets.MEGA_USERNAME }}
+          PASSWORD: ${{ secrets.MEGA_PASSWORD }}
 
       - name: Upload to MEGA
         uses: Difegue/action-megacmd@master
