@@ -11,7 +11,6 @@ ADD requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 RUN apt-get install -y sqlite3 lrzip
 
-COPY fin.db.sqlite.lrz *.csv /
 COPY entrypoint*.sh /
 ADD app /opt/
 

@@ -3,4 +3,4 @@ description: 'Fetch and load actions for findb'
 
 runs:
   using: 'docker'
-  image: docker://ghcr.io/adagrad/finget:latest
+  image: docker://ghcr.io/adagrad/finget:integration_test
