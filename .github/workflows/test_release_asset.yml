@@ -25,6 +25,7 @@ jobs:
           body: "Updated fin.db.sqlite.lrz"
 
   download_asset:
+    needs: upload_asset
     runs-on: ubuntu-latest
     name: Test downloading a release asset
     steps:
