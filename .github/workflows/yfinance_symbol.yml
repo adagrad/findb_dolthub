@@ -22,14 +22,18 @@ jobs:
         with:
           repo: adagrad/findb_dolthub
           version: tags/latest
-          file: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
+          regex: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
+          rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
+          rm fin.db.sqlite.lrz
 
       - name: lookup new symbols
         uses: adagrad/findb_dolthub@latest
@@ -43,14 +47,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
           tag: latest
+          file_glob: true
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
@@ -68,14 +73,18 @@ jobs:
         with:
           repo: adagrad/findb_dolthub
           version: tags/latest
-          file: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
+          regex: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
+          rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
+          rm fin.db.sqlite.lrz
 
       - name: lookup info details
         uses: adagrad/findb_dolthub@latest
@@ -87,14 +96,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
           tag: latest
+          file_glob: true
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
@@ -112,14 +122,18 @@ jobs:
         with:
           repo: adagrad/findb_dolthub
           version: tags/latest
-          file: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
+          regex: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
+          rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
+          rm fin.db.sqlite.lrz
 
       - name: fetch new quotes
         uses: adagrad/findb_dolthub@latest
@@ -131,14 +145,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
           tag: latest
+          file_glob: true
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
@@ -146,9 +161,9 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
           tag: backup
+          file_glob: true
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
@@ -166,14 +181,18 @@ jobs:
         with:
           repo: adagrad/findb_dolthub
           version: tags/latest
-          file: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
+          regex: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract database
         run: |
           sudo apt-get update
           sudo apt-get install lrzip
+          cat fin.db.sqlite.lrz.?? > fin.db.sqlite.lrz
+          rm fin.db.sqlite.lrz.??
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
+          rm fin.db.sqlite.lrz
 
       - name: fetch new quotes
         uses: adagrad/findb_dolthub@latest
@@ -185,14 +204,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
+          split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
           tag: latest
+          file_glob: true
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
 
@@ -200,8 +220,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: fin.db.sqlite.lrz
-          asset_name: fin.db.sqlite.lrz
+          file: fin.db.sqlite.lrz.*
           tag: backup
+          file_glob: true
           overwrite: true
           body: "Updated fin.db.sqlite.lrz"
