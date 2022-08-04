@@ -40,6 +40,8 @@ quote_table_name = 'yfinance_quote'
 @click.option('--clean', default=False, is_flag=True, help='Deletes intermediary files directly after load (only works together with --dolt-load)')
 def cli(time, database, inactive, output_dir, parallel_threads, include_new, clean):
     max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
+    log.info(f"jobs ends at: {max_runtime}")
+
     if database == "" or database == "None":
         database = None
 
@@ -50,22 +52,27 @@ def cli(time, database, inactive, output_dir, parallel_threads, include_new, cle
         last_state = last_state[last_state["delisted"] == inactive]
 
     log.info(f"found {len(last_state)} quotes to fetch prices for")
-    download_parallel(database, last_state, max_runtime, output_dir, True, clean, parallel_threads)
+
+    def early_exit():
+        return (max_runtime is not None and datetime.datetime.now() >= max_runtime) or check_disk_full()
+
+    download_parallel(database, last_state, max_runtime, output_dir, True, clean, parallel_threads, early_exit)
 
 
-def download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_load=False, clean=False, num_threads=4):
+def download_parallel(repo_database, last_state, max_runtime, output_dir, dolt_load=False, clean=False, num_threads=4, early_exit=None):
     execute_parallel(
         partial(
             _fetch_data,
             database=repo_database,
             dolt_load=dolt_load,
             path=output_dir,
-            early_exit=lambda: (max_runtime is not None and datetime.datetime.now() >= max_runtime) or check_disk_full(),
+            early_exit=early_exit,
             clean=clean,
         ),
         last_state.iterrows(),
         "last_state",
-        num_threads
+        num_threads,
+        early_exit=early_exit
     )
 
     print("done!")
@@ -99,7 +106,7 @@ def _fetch_data(database, last_state, path='.', dolt_load=False, early_exit=None
     first_price_date, last_price_date = last_state["first_quote_epoch"], last_state["last_quote_epoch"]
     delisted = last_state["delisted"] if last_state["delisted"] is not None else 0
 
-    # check eary exit
+    # check early exit
     if early_exit is not None and early_exit():
         log.warning(f"max time reached or disk almost full, exit before fetching {symbol}")
         return f"skipped {symbol}"
@@ -171,8 +178,13 @@ def _fetch_data(database, last_state, path='.', dolt_load=False, early_exit=None
 
 
 def _save_results(database, df, dolt_load,  csv_file, clean, symbol, min_epoch, max_epoch, delisted, tz_info):
-    # safe df
-    save_results(database, df, dolt_load, quote_table_name, csv_file, clean, index_columns=["symbol", "epoch"])
+    if len(df) > 0:
+        # safe df
+        if pd.Series(['symbol', 'epoch']).isin(df.columns).all():
+            save_results(database, df, dolt_load, quote_table_name, csv_file, clean, index_columns=["symbol", "epoch"])
+        else:
+            log.error(f"some strange dataframe for {symbol}\n{df.head()}")
+            delisted = True
 
     # save metadata
     save_results(
