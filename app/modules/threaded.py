@@ -19,7 +19,7 @@ def execute_parallel(func, items, item_arg_name, parallel_threads=4, early_exit=
 
                 sleep(0.2)
 
-            return [f.result() for f in futures]
+            return [f.result(timeout=0) for f in futures]
         except TimeoutError:
             print("maximum time reached")
         except KeyboardInterrupt:
@@ -28,5 +28,4 @@ def execute_parallel(func, items, item_arg_name, parallel_threads=4, early_exit=
             concurrent.futures.thread._threads_queues.clear()
             raise
         except Exception as e:
-            print(type(e))
             raise e
