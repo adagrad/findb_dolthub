@@ -3,15 +3,15 @@ name: "Find New Symbols"
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "0 18 * * *"
 
 env:
   RUNTIME: 240
 
 jobs:
-  search_symbols:
+  update_info:
     runs-on: ubuntu-latest
-    name: A job to look for new symbols
+    name: A job to look for detailed infos for new symbols
     steps:
 
       - name: "Build:checkout"
@@ -33,12 +33,10 @@ jobs:
           lrzip -f -d fin.db.sqlite.lrz -o fin.db.sqlite
           rm fin.db.sqlite.lrz
 
-      - name: lookup new symbols
+      - name: lookup info details
         uses: adagrad/findb_dolthub@latest
         with:
-          args: "yfinance symbol --time ${{ env.RUNTIME }}"
-          # resume last session
-          # args: "yfinance symbol --time ${{ env.RUNTIME }}" -s yfsymbols.csv.existing.symbols -r yfsymbols.csv.possible.symbols
+          args: "yfinance info --time ${{ env.RUNTIME }}"
 
       - name: Archive database
         run: |
