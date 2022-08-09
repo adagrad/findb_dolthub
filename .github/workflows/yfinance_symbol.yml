@@ -14,6 +14,13 @@ jobs:
     name: A job to look for new symbols
     steps:
 
+#      - name: Maximize build space
+#        uses: easimon/maximize-build-space@master
+#        with:
+#          root-reserve-mb: 512
+#          swap-size-mb: 1024
+#          remove-dotnet: 'true'
+
       - name: "Build:checkout"
         uses: actions/checkout@v2
 
@@ -46,6 +53,7 @@ jobs:
           sudo apt-get install lrzip
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
           split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
+          ls -l
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
