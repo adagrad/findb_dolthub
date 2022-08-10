@@ -1,4 +1,4 @@
-name: "TEST Find New Symbols"
+name: "TEST yfinance all"
 
 on:
   workflow_dispatch:
@@ -18,9 +18,6 @@ jobs:
           root-reserve-mb: 512
           swap-size-mb: 1024
           remove-dotnet: 'true'
-
-      - name: "Build:checkout"
-        uses: actions/checkout@v2
 
       - name: Download database from release
         uses: robinraju/release-downloader@v1.4
@@ -76,9 +73,6 @@ jobs:
           swap-size-mb: 1024
           remove-dotnet: 'true'
 
-      - name: "Build:checkout"
-        uses: actions/checkout@v2
-
       - name: Download database from release
         uses: robinraju/release-downloader@v1.4
         with:
@@ -130,9 +124,6 @@ jobs:
           root-reserve-mb: 512
           swap-size-mb: 1024
           remove-dotnet: 'true'
-
-      - name: "Build:checkout"
-        uses: actions/checkout@v2
 
       - name: Download database from release
         uses: robinraju/release-downloader@v1.4

@@ -21,9 +21,6 @@ jobs:
           swap-size-mb: 1024
           remove-dotnet: 'true'
 
-      - name: "Build:checkout"
-        uses: actions/checkout@v2
-
       - name: Download database from release
         uses: robinraju/release-downloader@v1.4
         with:
