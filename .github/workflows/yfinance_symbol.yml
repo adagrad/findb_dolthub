@@ -2,8 +2,8 @@ name: "Find New Symbols"
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 12 * * *"
+  #schedule:
+  #  - cron: "0 12 * * *"
 
 env:
   RUNTIME: 240

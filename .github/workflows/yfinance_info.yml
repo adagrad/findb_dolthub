@@ -2,8 +2,8 @@ name: "Update Info on New Symbols"
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 18 * * *"
+  #schedule:
+  #  - cron: "0 18 * * *"
 
 env:
   RUNTIME: 240
