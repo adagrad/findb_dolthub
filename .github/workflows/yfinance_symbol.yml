@@ -47,7 +47,9 @@ jobs:
       - name: Archive database
         run: |
           sudo apt-get update
-          sudo apt-get install lrzip
+          sudo apt-get install lrzip sqlite3
+          sqlite3 fin.db.sqlite "begin; create table force_journal_cleanup (id integer primary key); rollback;"
+          ls -l
           lrzip --lzo -f -o fin.db.sqlite.lrz fin.db.sqlite
           split -b1900M fin.db.sqlite.lrz fin.db.sqlite.lrz.
           ls -l
