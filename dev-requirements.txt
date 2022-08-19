@@ -1,4 +1,7 @@
+fastdtw
+matplotlib
 pytest
 pytest-asyncio
 sklearn
+sktime
 tslearn

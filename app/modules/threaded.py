@@ -4,7 +4,7 @@ from functools import partial
 from time import sleep
 
 
-def execute_parallel(func, items, item_arg_name, parallel_threads=4, early_exit=None):
+def execute_parallel(func, items, item_arg_name, parallel_threads=4, early_exit=None, shutdown_hook=None):
     with ThreadPoolExecutor(max_workers=parallel_threads) as executor:
         futures = \
             [executor.submit(partial(func, **{item_arg_name: item})) for item in items]
@@ -12,7 +12,6 @@ def execute_parallel(func, items, item_arg_name, parallel_threads=4, early_exit=
         try:
             while not all([future.done() for future in futures]):
                 if early_exit is not None and early_exit():
-                    executor._threads.clear()
                     concurrent.futures.thread._threads_queues.clear()
                     executor.shutdown(False)
                     return [f.result(timeout=0) for f in futures]
@@ -24,8 +23,11 @@ def execute_parallel(func, items, item_arg_name, parallel_threads=4, early_exit=
             print("maximum time reached")
         except KeyboardInterrupt:
             print("SIGTERM non gracefully stopping thread pool!")
-            executor._threads.clear()
             concurrent.futures.thread._threads_queues.clear()
+            executor.shutdown(False)
             raise
         except Exception as e:
             raise e
+        finally:
+            if shutdown_hook is not None:
+                shutdown_hook()

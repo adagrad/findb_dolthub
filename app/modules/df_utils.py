@@ -1,15 +1,19 @@
+import atexit
 import logging
 import os
 import random
+import warnings
 from threading import Lock
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 
 from modules.dolt_api import dolt_load_file
 
 threadlock = Lock()
 log = logging.getLogger(__name__)
-engine = None
+engine: Engine = None
+atexit.register(lambda: engine.dispose() if engine is not None else None)
 
 
 def df_to_csv(df, file):
@@ -38,7 +42,8 @@ def df_to_sql_with_replace(df, table_name, db_conn):
 
         data = [dict(zip(keys, row)) for row in data_iter]
 
-        conn.execute(table.table.insert(replace_string=""), data)
+        with warnings.catch_warnings():
+            conn.execute(table.table.insert(replace_string=""), data)
 
     if len(df) > 0:
         with engine.connect() as connection:
