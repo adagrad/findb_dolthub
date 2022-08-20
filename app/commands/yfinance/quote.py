@@ -36,7 +36,7 @@ quote_table_name = 'yfinance_quote'
 @click.option('-i', '--inactive', type=int, default=None, help='Whether only active (0)/inactive(1) or both (default) symbols should be fetched')
 @click.option('-o', '--output-dir', type=str, default='.', help='Path to store downloaded csv files')
 @click.option('-p', '--parallel-threads', type=int, default=10, help='Number of parallel threads')
-@click.option('-n', '--include-new', default=False, is_flag=True, help='Also look for symbols without any quote (need main branch to be present)')
+@click.option('-n', '--include-new', default=False, is_flag=True, help='Also look for symbols without any quote')
 @click.option('--clean', default=False, is_flag=True, help='Deletes intermediary files directly after load (only works together with --dolt-load)')
 def cli(time, database, inactive, output_dir, parallel_threads, include_new, clean):
     max_runtime = datetime.datetime.now() + timedelta(minutes=time) if time is not None else None
@@ -84,7 +84,7 @@ def _select_last_state(database, include_new_symbols=False):
             select s.symbol, m.min_epoch as first_quote_epoch, m.max_epoch as last_quote_epoch, e.timezone as tz_info, coalesce(m.delisted, 0) as delisted, null as volume
               from yfinance_symbol s
               join yfinance_exchange_info e on e.symbol = s.exchange
-              left outer join yfinance_quote_meta m on m.symbol = s.exchange
+              left outer join yfinance_quote_meta m on m.symbol = s.symbol
              where m.max_epoch is null or m.max_epoch < strftime('%s', date(current_date, '-1 days'))
              order by m.max_epoch is null desc, m.max_epoch asc
         """
